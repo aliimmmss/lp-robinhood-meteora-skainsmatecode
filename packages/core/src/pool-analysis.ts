@@ -100,7 +100,8 @@ export function formatRatio(ratio: ExactRatio, decimalPlaces = 8): string {
 }
 
 export function analyzePool(input: PoolAnalysisInput, options: PoolAnalysisOptions = {}): PoolAnalysis {
-  if (input.feeTier < 0 || !Number.isInteger(input.feeTier)) throw new RangeError('feeTier must be a non-negative integer')
+  if (input.feeTier < 0 || !Number.isInteger(input.feeTier))
+    throw new RangeError('feeTier must be a non-negative integer')
   if (input.activeLiquidity < 0n) throw new RangeError('activeLiquidity must be non-negative')
   if (Number.isNaN(input.observedAt.getTime())) throw new RangeError('observedAt must be valid')
 
