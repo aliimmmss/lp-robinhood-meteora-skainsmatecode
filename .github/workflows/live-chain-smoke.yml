@@ -32,18 +32,37 @@ jobs:
           cat build-output.txt
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit 0
-      - name: Probe public RPC and canonical contracts
+      - name: Probe configured RPC and canonical contracts
         if: steps.build.outputs.exit_code == '0'
+        id: smoke
         shell: bash
+        env:
+          ROBINHOOD_RPC_URL: ${{ secrets.ROBINHOOD_RPC_URL }}
         run: |
           set +e
-          npm --workspace @lp-mine/robinhood-univ3 run smoke:live > live-smoke.json 2> live-smoke-error.txt
+          if [ -z "$ROBINHOOD_RPC_URL" ]; then
+            echo "ROBINHOOD_RPC_URL repository secret is not configured" > live-smoke-error.txt
+            echo "exit_code=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          npm --workspace @lp-mine/robinhood-univ3 run smoke:live > live-smoke.json 2> live-smoke-error.raw.txt
           status=$?
+
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const secret = process.env.ROBINHOOD_RPC_URL ?? ''
+          const input = fs.existsSync('live-smoke-error.raw.txt')
+            ? fs.readFileSync('live-smoke-error.raw.txt', 'utf8')
+            : ''
+          fs.writeFileSync('live-smoke-error.txt', secret ? input.split(secret).join('[REDACTED_RPC_URL]') : input)
+          NODE
+          rm -f live-smoke-error.raw.txt
+
           cat live-smoke.json || true
           cat live-smoke-error.txt >&2 || true
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit 0
-        id: smoke
       - name: Upload smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
