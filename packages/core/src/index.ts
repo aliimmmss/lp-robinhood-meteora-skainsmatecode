@@ -22,6 +22,8 @@ export type SourceStamped<T> = {
   warnings: readonly string[]
 }
 
+export { amountsForLiquidity, analyzeLpVsHodl, tickToSqrtPriceX96 } from './lp-vs-hodl.js'
+export type { LpVsHodlAnalysis, LpVsHodlInput, PositionInventory } from './lp-vs-hodl.js'
 export { analyzePool, compareFeeTierPools, formatRatio, sqrtPriceX96ToToken1PerToken0 } from './pool-analysis.js'
 export type {
   ExactRatio,
