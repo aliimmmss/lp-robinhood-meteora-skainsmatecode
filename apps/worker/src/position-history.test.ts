@@ -172,6 +172,7 @@ describe('position history report', () => {
     const endpointPoints = report.scenarios.find((scenario) => scenario.name === 'endpoint')!.analysis.points
 
     expect(report.status).toBe('partial')
+    expect(report.returnedSwaps).toBe(2)
     expect(report.warnings.join(' ')).toContain('at or before the entry block')
     expect(endpointPoints[0]?.cumulativeFees).toEqual({ amount0: 0n, amount1: 0n })
     expect(endpointPoints[1]?.cumulativeFees.amount0).toBeGreaterThan(0n)
