@@ -86,7 +86,8 @@ function validateProvenance(provenance: PositionEvidenceProvenance | undefined, 
 export function applyPositionCosts(input: PositionCostAccountingInput): PositionCostAccounting {
   const costs = input.costs.map((entry) => {
     if (entry.amount0 < 0n || entry.amount1 < 0n) throw new RangeError('Position costs must be non-negative')
-    const warnings = validateProvenance(entry.provenance, `${entry.category} cost`)
+    const warnings =
+      entry.amount0 === 0n && entry.amount1 === 0n ? [] : validateProvenance(entry.provenance, `${entry.category} cost`)
     return {
       ...entry,
       valueToken1BaseUnits: costValue(entry, input.accounting.exitPriceToken1PerToken0),
@@ -105,6 +106,6 @@ export function applyPositionCosts(input: PositionCostAccountingInput): Position
     evidenceQuality: warnings.length === 0 ? 'complete' : 'partial',
     warnings,
     disclaimer:
-      'Costs are externally supplied evidence valued at the exit pool price. Complete evidence records a source and observation timestamp; references remain optional. This overlay does not infer gas, slippage, rebalancing, taxes, incentives, or execution quality.',
+      'Costs are externally supplied evidence valued at the exit pool price. Complete nonzero evidence records a source and observation timestamp; references remain optional. This overlay does not infer gas, slippage, rebalancing, taxes, incentives, or execution quality.',
   }
 }
