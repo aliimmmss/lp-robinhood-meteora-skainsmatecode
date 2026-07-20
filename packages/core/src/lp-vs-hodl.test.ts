@@ -3,8 +3,18 @@ import type { TokenRef } from './index.js'
 import { amountsForLiquidity, analyzeLpVsHodl, tickToSqrtPriceX96 } from './lp-vs-hodl.js'
 
 const Q96 = 1n << 96n
-const token0: TokenRef = { chainId: 1, address: '0x0000000000000000000000000000000000000001', symbol: 'T0', decimals: 18 }
-const token1: TokenRef = { chainId: 1, address: '0x0000000000000000000000000000000000000002', symbol: 'T1', decimals: 6 }
+const token0: TokenRef = {
+  chainId: 1,
+  address: '0x0000000000000000000000000000000000000001',
+  symbol: 'T0',
+  decimals: 18,
+}
+const token1: TokenRef = {
+  chainId: 1,
+  address: '0x0000000000000000000000000000000000000002',
+  symbol: 'T1',
+  decimals: 6,
+}
 
 describe('LP versus HODL accounting', () => {
   it('matches canonical tick zero and monotonic tick prices', () => {
@@ -68,9 +78,9 @@ describe('LP versus HODL accounting', () => {
 
     expect(withFees.divergenceToken1BaseUnits).toEqual(withoutFees.divergenceToken1BaseUnits)
     expect(withFees.feeValueToken1BaseUnits.numerator).toBeGreaterThan(0n)
-    expect(withFees.netVsHodlToken1BaseUnits.numerator * withoutFees.netVsHodlToken1BaseUnits.denominator).toBeGreaterThan(
-      withoutFees.netVsHodlToken1BaseUnits.numerator * withFees.netVsHodlToken1BaseUnits.denominator,
-    )
+    expect(
+      withFees.netVsHodlToken1BaseUnits.numerator * withoutFees.netVsHodlToken1BaseUnits.denominator,
+    ).toBeGreaterThan(withoutFees.netVsHodlToken1BaseUnits.numerator * withFees.netVsHodlToken1BaseUnits.denominator)
   })
 
   it('rejects invalid ranges and negative fees', () => {
