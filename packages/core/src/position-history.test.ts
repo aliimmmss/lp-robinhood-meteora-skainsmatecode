@@ -50,7 +50,10 @@ function input(overrides: Partial<PositionHistoryInput> = {}): PositionHistoryIn
   }
 }
 
-function isGreater(left: { numerator: bigint; denominator: bigint }, right: { numerator: bigint; denominator: bigint }): boolean {
+function isGreater(
+  left: { numerator: bigint; denominator: bigint },
+  right: { numerator: bigint; denominator: bigint },
+): boolean {
   return left.numerator * right.denominator > right.numerator * left.denominator
 }
 
@@ -202,10 +205,19 @@ describe('analyzePositionHistory', () => {
       analyzePositionHistory(input({ observations: [base[0]!, { ...base[1]!, observedAt: base[0]!.observedAt }] })),
     ).toThrow(/timestamps must be unique/)
     expect(() =>
-      analyzePositionHistory(input({ observations: [{ ...base[0]!, blockNumber: 2n }, { ...base[1]!, blockNumber: 1n }] })),
+      analyzePositionHistory(
+        input({
+          observations: [
+            { ...base[0]!, blockNumber: 2n },
+            { ...base[1]!, blockNumber: 1n },
+          ],
+        }),
+      ),
     ).toThrow(/increase chronologically/)
     expect(() =>
-      analyzePositionHistory(input({ observations: [base[0]!, { ...base[1]!, sqrtPriceX96: tickToSqrtPriceX96(149) }] })),
+      analyzePositionHistory(
+        input({ observations: [base[0]!, { ...base[1]!, sqrtPriceX96: tickToSqrtPriceX96(149) }] }),
+      ),
     ).toThrow(/inconsistent/)
   })
 })
