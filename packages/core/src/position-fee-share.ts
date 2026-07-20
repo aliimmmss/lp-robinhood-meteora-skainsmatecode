@@ -109,12 +109,19 @@ function ratio(numerator: bigint, denominator: bigint): ExactRatio {
   return { numerator: numerator / divisor, denominator: denominator / divisor }
 }
 
-function compareOrder(
+function compareObservedOrder(
   left: { observedAt: Date; blockNumber: bigint; logIndex?: number },
   right: { observedAt: Date; blockNumber: bigint; logIndex?: number },
 ): number {
   const timeDifference = left.observedAt.getTime() - right.observedAt.getTime()
   if (timeDifference !== 0) return timeDifference
+  return compareBlockOrder(left, right)
+}
+
+function compareBlockOrder(
+  left: { blockNumber: bigint; logIndex?: number },
+  right: { blockNumber: bigint; logIndex?: number },
+): number {
   if (left.blockNumber !== right.blockNumber) return left.blockNumber < right.blockNumber ? -1 : 1
   return (left.logIndex ?? -1) - (right.logIndex ?? -1)
 }
@@ -235,7 +242,14 @@ function analysisFromAccumulator(input: PositionFeeShareParameters, state: Accum
   const token0UpperBound = feeCeiling(state.token0IntersectingInput, input.feeTier)
   const token1UpperBound = feeCeiling(state.token1IntersectingInput, input.feeTier)
   return {
-    ...input,
+    poolAddress: input.poolAddress,
+    feeTier: input.feeTier,
+    tickLower: input.tickLower,
+    tickUpper: input.tickUpper,
+    positionLiquidity: input.positionLiquidity,
+    token0Decimals: input.token0Decimals,
+    token1Decimals: input.token1Decimals,
+    ...(input.initialTick === undefined ? {} : { initialTick: input.initialTick }),
     swapCount: state.swapCount,
     knownStartTickSwapCount: state.knownStartTickSwapCount,
     unknownStartTickSwapCount: state.unknownStartTickSwapCount,
@@ -275,7 +289,7 @@ function analysisFromAccumulator(input: PositionFeeShareParameters, state: Accum
 export function estimatePositionFeeShare(input: PositionFeeShareInput): PositionFeeShareAnalysis {
   validateParameters(input)
   if (input.swaps.length === 0) throw new RangeError('At least one swap is required')
-  const swaps = [...input.swaps].sort(compareOrder)
+  const swaps = [...input.swaps].sort(compareObservedOrder)
   const state = createAccumulator(input.initialTick)
   for (const swap of swaps) {
     validateSwap(swap)
@@ -289,7 +303,7 @@ export function estimatePositionFeeShareTimeline(input: PositionFeeShareTimeline
   if (input.entryBlockNumber < 0n) throw new RangeError('entryBlockNumber must be non-negative')
   if (input.checkpoints.length === 0) throw new RangeError('At least one checkpoint is required')
 
-  const checkpoints = [...input.checkpoints].sort(compareOrder)
+  const checkpoints = [...input.checkpoints].sort(compareBlockOrder)
   for (let index = 0; index < checkpoints.length; index += 1) {
     const checkpoint = checkpoints[index]!
     if (Number.isNaN(checkpoint.observedAt.getTime())) throw new RangeError('Checkpoint timestamps must be valid')
@@ -301,7 +315,7 @@ export function estimatePositionFeeShareTimeline(input: PositionFeeShareTimeline
     }
   }
 
-  const swaps = [...input.swaps].sort(compareOrder)
+  const swaps = [...input.swaps].sort(compareBlockOrder)
   for (const swap of swaps) validateSwap(swap)
   const included = swaps.filter((swap) => swap.blockNumber > input.entryBlockNumber)
   const excludedAtOrBeforeEntrySwapCount = swaps.length - included.length
@@ -314,7 +328,11 @@ export function estimatePositionFeeShareTimeline(input: PositionFeeShareTimeline
       accumulate(state, included[swapIndex]!, input)
       swapIndex += 1
     }
-    points.push({ blockNumber: checkpoint.blockNumber, observedAt: checkpoint.observedAt, analysis: analysisFromAccumulator(input, state) })
+    points.push({
+      blockNumber: checkpoint.blockNumber,
+      observedAt: checkpoint.observedAt,
+      analysis: analysisFromAccumulator(input, state),
+    })
   }
 
   return {
@@ -324,7 +342,7 @@ export function estimatePositionFeeShareTimeline(input: PositionFeeShareTimeline
     checkpoints: points,
     assumptions: [
       'Only swaps strictly after the entry block are eligible for position fee accrual.',
-      'Each checkpoint includes eligible swaps through its block number, ordered by timestamp, block number, and log index.',
+      'Each checkpoint includes eligible swaps through its block number, ordered by block number and log index.',
       'All checkpoint snapshots are emitted from one cumulative pass over the validated swap sequence.',
     ],
   }
