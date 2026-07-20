@@ -1,7 +1,9 @@
 import {
   analyzeLpVsHodl,
+  applyPositionCosts,
   estimatePositionFeeShare,
   type LpVsHodlAnalysis,
+  type PositionCostAccounting,
   type PositionFeeShareAnalysis,
 } from '@lp-mine/core'
 import {
@@ -20,6 +22,14 @@ export type PositionPerformanceScenario = {
   fees0: bigint
   fees1: bigint
   accounting: LpVsHodlAnalysis
+  costAccounting: PositionCostAccounting | null
+}
+
+export type RealizedPositionPerformance = {
+  fees0: bigint
+  fees1: bigint
+  accounting: LpVsHodlAnalysis
+  costAccounting: PositionCostAccounting | null
 }
 
 export type PositionPerformanceReport = {
@@ -34,6 +44,8 @@ export type PositionPerformanceReport = {
   exitObservation: PoolSnapshot | null
   swapEvidence: PositionFeeShareAnalysis | null
   scenarios: readonly PositionPerformanceScenario[]
+  realized: RealizedPositionPerformance | null
+  costsSupplied: boolean
   totalMatchingSwaps: number
   returnedSwaps: number
   warnings: readonly string[]
@@ -43,6 +55,9 @@ export type PositionPerformanceReport = {
 export function buildPositionPerformanceReport(config: PositionFeeShareReportConfig): PositionPerformanceReport {
   const pool = ROBINHOOD_WETH_USDG_POOLS.find((candidate) => candidate.feeTier === config.feeTier)
   if (!pool) throw new Error(`Unsupported canonical fee tier: ${config.feeTier}`)
+  const costsSupplied = config.costsSupplied === true
+  const costs = config.costs ?? []
+  const realizedFees = config.realizedFees ?? null
 
   const coverage = inspectSwapEvidenceCoverage(config.databasePath, pool.poolAddress)
   const observations = new SqlitePoolObservationStore(config.databasePath)
@@ -72,6 +87,7 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
       warnings.push('One or more selected pool observations are partial or stale.')
     }
     for (const observation of windowObservations) warnings.push(...observation.warnings)
+    if (!costsSupplied) warnings.push('No explicit gas, slippage, rebalance, or other cost evidence was supplied.')
 
     if (!entryObservation || !exitObservation || entryObservation === exitObservation) {
       return emptyReport(config, pool.poolAddress, coverage, entryObservation, exitObservation, warnings)
@@ -109,6 +125,21 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
       })),
     })
 
+    const analyze = (fees0: bigint, fees1: bigint) =>
+      analyzeLpVsHodl({
+        token0: entryObservation.value.token0,
+        token1: entryObservation.value.token1,
+        tickLower: config.tickLower,
+        tickUpper: config.tickUpper,
+        liquidity: config.positionLiquidity,
+        entrySqrtPriceX96: entryObservation.value.sqrtPriceX96,
+        exitSqrtPriceX96: exitObservation.value.sqrtPriceX96,
+        fees0,
+        fees1,
+      })
+    const withCosts = (accounting: LpVsHodlAnalysis) =>
+      costsSupplied ? applyPositionCosts({ accounting, costs }) : null
+
     const scenarioFees = [
       {
         name: 'lower' as const,
@@ -126,20 +157,21 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
         fees1: swapEvidence.token1.upperBoundBaseUnits,
       },
     ]
-    const scenarios = scenarioFees.map((scenario) => ({
-      ...scenario,
-      accounting: analyzeLpVsHodl({
-        token0: entryObservation.value.token0,
-        token1: entryObservation.value.token1,
-        tickLower: config.tickLower,
-        tickUpper: config.tickUpper,
-        liquidity: config.positionLiquidity,
-        entrySqrtPriceX96: entryObservation.value.sqrtPriceX96,
-        exitSqrtPriceX96: exitObservation.value.sqrtPriceX96,
-        fees0: scenario.fees0,
-        fees1: scenario.fees1,
-      }),
-    }))
+    const scenarios = scenarioFees.map((scenario) => {
+      const accounting = analyze(scenario.fees0, scenario.fees1)
+      return { ...scenario, accounting, costAccounting: withCosts(accounting) }
+    })
+    const realized = realizedFees
+      ? (() => {
+          const accounting = analyze(realizedFees.amount0, realizedFees.amount1)
+          return {
+            fees0: realizedFees.amount0,
+            fees1: realizedFees.amount1,
+            accounting,
+            costAccounting: withCosts(accounting),
+          }
+        })()
+      : null
 
     return {
       mode: 'read-only',
@@ -153,11 +185,13 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
       exitObservation,
       swapEvidence,
       scenarios,
+      realized,
+      costsSupplied,
       totalMatchingSwaps: result.totalMatching,
       returnedSwaps: result.swaps.length,
       warnings: [...new Set(warnings)],
       disclaimer:
-        'This report combines validated canonical swap evidence with deterministic LP-versus-HODL accounting. It is not realized profit and excludes gas, slippage, rebalancing, incentives, taxes, and execution risk.',
+        'Estimated fee scenarios remain separate from externally supplied realized fees. Cost-adjusted values appear only when explicit cost evidence is supplied. This report does not infer APR, taxes, incentives, or execution quality.',
     }
   } finally {
     observations.close()
@@ -185,6 +219,8 @@ function emptyReport(
     exitObservation,
     swapEvidence: null,
     scenarios: [],
+    realized: null,
+    costsSupplied: config.costsSupplied === true,
     totalMatchingSwaps: 0,
     returnedSwaps: 0,
     warnings: [...new Set(warnings.length > 0 ? warnings : ['At least two pool observations are required.'])],
