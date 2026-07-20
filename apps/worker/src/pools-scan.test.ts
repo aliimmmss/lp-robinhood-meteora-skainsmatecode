@@ -34,8 +34,8 @@ describe('readPoolScanConfig', () => {
   })
 
   it('rejects malformed numeric settings', () => {
-    expect(() =>
-      readPoolScanConfig({ LP_MINE_START_BLOCK: '123.5' }),
-    ).toThrow('LP_MINE_START_BLOCK must be an unsigned integer')
+    expect(() => readPoolScanConfig({ LP_MINE_START_BLOCK: '123.5' })).toThrow(
+      'LP_MINE_START_BLOCK must be an unsigned integer',
+    )
   })
 })
