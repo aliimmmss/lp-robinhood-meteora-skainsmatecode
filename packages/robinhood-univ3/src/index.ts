@@ -16,7 +16,9 @@ export type {
   SyncOptions,
   SyncResult,
 } from './indexer.js'
-export { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3, SUPPORTED_FEE_TIERS } from './registry.js'
+export { SqlitePoolObservationStore } from './observation-store.js'
+export type { PoolObservationQuery } from './observation-store.js'
+export { ROBINHOOD_CHAIN_ID, ROBINHOOD_TOKENS, ROBINHOOD_UNISWAP_V3, SUPPORTED_FEE_TIERS } from './registry.js'
 export type { SupportedFeeTier } from './registry.js'
 export { SqlitePoolIndexStore } from './sqlite-store.js'
 
