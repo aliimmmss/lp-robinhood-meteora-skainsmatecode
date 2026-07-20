@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          npx eslint . --format compact > eslint-report.txt 2>&1
+          npx eslint . > eslint-report.txt 2>&1
           status=$?
           cat eslint-report.txt
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
