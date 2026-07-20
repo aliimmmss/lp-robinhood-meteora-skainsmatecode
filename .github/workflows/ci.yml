@@ -7,7 +7,12 @@ on:
 
 jobs:
   verify:
+    name: ${{ matrix.check }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [format, lint, typecheck, test, build]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -17,8 +22,13 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+      - if: matrix.check == 'format'
+        run: pnpm format:check
+      - if: matrix.check == 'lint'
+        run: pnpm lint
+      - if: matrix.check == 'typecheck'
+        run: pnpm typecheck
+      - if: matrix.check == 'test'
+        run: pnpm test
+      - if: matrix.check == 'build'
+        run: pnpm build
