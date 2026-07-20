@@ -1,4 +1,10 @@
-import type { PositionCostEntry } from '@lp-mine/core'
+import type { PositionCostEntry, PositionEvidenceProvenance } from '@lp-mine/core'
+
+export type RealizedFeeEvidence = {
+  amount0: bigint
+  amount1: bigint
+  provenance?: PositionEvidenceProvenance
+}
 
 export type PositionFeeShareReportConfig = {
   databasePath: string
@@ -8,7 +14,7 @@ export type PositionFeeShareReportConfig = {
   positionLiquidity: bigint
   windowSeconds: number
   limit: number
-  realizedFees?: { amount0: bigint; amount1: bigint } | null
+  realizedFees?: RealizedFeeEvidence | null
   costs?: readonly PositionCostEntry[]
   costsSupplied?: boolean
 }
@@ -34,6 +40,7 @@ export function readPositionFeeShareReportConfig(
     throw new Error('Both LP_MINE_POSITION_REALIZED_FEES0 and LP_MINE_POSITION_REALIZED_FEES1 are required together')
   }
 
+  const provenance = parseEvidenceProvenance(environment)
   const costDefinitions = [
     ['gas', 'LP_MINE_POSITION_GAS_COST0', 'LP_MINE_POSITION_GAS_COST1'],
     ['slippage', 'LP_MINE_POSITION_SLIPPAGE_COST0', 'LP_MINE_POSITION_SLIPPAGE_COST1'],
@@ -43,11 +50,16 @@ export function readPositionFeeShareReportConfig(
   const costsSupplied = costDefinitions.some(
     ([, token0Name, token1Name]) => environment[token0Name] !== undefined || environment[token1Name] !== undefined,
   )
-  const costs = costDefinitions.map(([category, token0Name, token1Name]) => ({
-    category,
-    amount0: parseOptionalNonNegativeBigInt(environment[token0Name], token0Name),
-    amount1: parseOptionalNonNegativeBigInt(environment[token1Name], token1Name),
-  }))
+  const costs = costDefinitions.map(([category, token0Name, token1Name]) => {
+    const amount0 = parseOptionalNonNegativeBigInt(environment[token0Name], token0Name)
+    const amount1 = parseOptionalNonNegativeBigInt(environment[token1Name], token1Name)
+    return {
+      category,
+      amount0,
+      amount1,
+      ...(amount0 > 0n || amount1 > 0n ? { provenance } : {}),
+    }
+  })
 
   return {
     databasePath: environment.LP_MINE_DATABASE_PATH ?? './data/robinhood-univ3.sqlite',
@@ -67,11 +79,32 @@ export function readPositionFeeShareReportConfig(
             environment.LP_MINE_POSITION_REALIZED_FEES1,
             'LP_MINE_POSITION_REALIZED_FEES1',
           ),
+          ...(provenance ? { provenance } : {}),
         }
       : null,
     costs,
     costsSupplied,
   }
+}
+
+function parseEvidenceProvenance(environment: NodeJS.ProcessEnv): PositionEvidenceProvenance | undefined {
+  const source = environment.LP_MINE_POSITION_EVIDENCE_SOURCE
+  const observedAtValue = environment.LP_MINE_POSITION_EVIDENCE_OBSERVED_AT
+  const reference = environment.LP_MINE_POSITION_EVIDENCE_REFERENCE
+  const any = source !== undefined || observedAtValue !== undefined || reference !== undefined
+  if (!any) return undefined
+  if (source === undefined || observedAtValue === undefined) {
+    throw new Error(
+      'LP_MINE_POSITION_EVIDENCE_SOURCE and LP_MINE_POSITION_EVIDENCE_OBSERVED_AT are required together',
+    )
+  }
+  if (source.trim().length === 0) throw new Error('LP_MINE_POSITION_EVIDENCE_SOURCE must not be empty')
+  const observedAt = new Date(observedAtValue)
+  if (Number.isNaN(observedAt.getTime())) throw new Error('LP_MINE_POSITION_EVIDENCE_OBSERVED_AT must be a valid timestamp')
+  if (reference !== undefined && reference.trim().length === 0) {
+    throw new Error('LP_MINE_POSITION_EVIDENCE_REFERENCE must not be empty when supplied')
+  }
+  return { source, observedAt, ...(reference ? { reference } : {}) }
 }
 
 function parseRequiredInteger(value: string | undefined, name: string): number {
