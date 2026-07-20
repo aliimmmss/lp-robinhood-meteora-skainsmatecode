@@ -100,13 +100,21 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
     })
 
     const scenarioFees = [
-      { name: 'lower' as const, fees0: swapEvidence.token0.lowerBoundBaseUnits, fees1: swapEvidence.token1.lowerBoundBaseUnits },
+      {
+        name: 'lower' as const,
+        fees0: swapEvidence.token0.lowerBoundBaseUnits,
+        fees1: swapEvidence.token1.lowerBoundBaseUnits,
+      },
       {
         name: 'endpoint' as const,
         fees0: swapEvidence.token0.endpointEstimateBaseUnits,
         fees1: swapEvidence.token1.endpointEstimateBaseUnits,
       },
-      { name: 'upper' as const, fees0: swapEvidence.token0.upperBoundBaseUnits, fees1: swapEvidence.token1.upperBoundBaseUnits },
+      {
+        name: 'upper' as const,
+        fees0: swapEvidence.token0.upperBoundBaseUnits,
+        fees1: swapEvidence.token1.upperBoundBaseUnits,
+      },
     ]
     const scenarios = scenarioFees.map((scenario) => ({
       ...scenario,
@@ -167,8 +175,7 @@ function emptyReport(
     totalMatchingSwaps: 0,
     returnedSwaps: 0,
     warnings: [...new Set(warnings.length > 0 ? warnings : ['At least two pool observations are required.'])],
-    disclaimer:
-      'Insufficient evidence for LP-versus-HODL performance. No profitability conclusion should be drawn.',
+    disclaimer: 'Insufficient evidence for LP-versus-HODL performance. No profitability conclusion should be drawn.',
   }
 }
 
