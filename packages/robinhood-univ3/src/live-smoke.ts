@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url'
 import { getAddress, zeroAddress, type Address } from 'viem'
-import { createRobinhoodPublicClient, createViemReadClient } from './live-client.js'
 import { readVerifiedPoolSnapshot } from './index.js'
+import { createRobinhoodPublicClient, createViemReadClient } from './live-client.js'
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3, SUPPORTED_FEE_TIERS } from './registry.js'
 
 const ROBINHOOD_USDG = getAddress('0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168')
@@ -12,6 +12,12 @@ type ContractProbe = {
   hasCode: boolean
 }
 
+const contractTargets: ReadonlyArray<Pick<ContractProbe, 'name' | 'address'>> = [
+  { name: 'factory', address: ROBINHOOD_UNISWAP_V3.factory },
+  { name: 'wrappedNative', address: ROBINHOOD_UNISWAP_V3.wrappedNative },
+  { name: 'usdg', address: ROBINHOOD_USDG },
+]
+
 export async function runLiveSmoke(rpcUrl = process.env.ROBINHOOD_RPC_URL): Promise<void> {
   const publicClient = createRobinhoodPublicClient(rpcUrl ? { rpcUrl } : {})
   const chainId = await publicClient.getChainId()
@@ -20,15 +26,11 @@ export async function runLiveSmoke(rpcUrl = process.env.ROBINHOOD_RPC_URL): Prom
   }
 
   const contracts = await Promise.all(
-    [
-      ['factory', ROBINHOOD_UNISWAP_V3.factory],
-      ['wrappedNative', ROBINHOOD_UNISWAP_V3.wrappedNative],
-      ['usdg', ROBINHOOD_USDG],
-    ].map(async ([name, address]) => {
-      const bytecode = await publicClient.getBytecode({ address: address as Address })
+    contractTargets.map(async ({ name, address }) => {
+      const bytecode = await publicClient.getBytecode({ address })
       return {
         name,
-        address: address as Address,
+        address,
         hasCode: bytecode !== undefined && bytecode !== '0x',
       } satisfies ContractProbe
     }),
