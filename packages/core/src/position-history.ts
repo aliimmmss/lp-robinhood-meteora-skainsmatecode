@@ -174,9 +174,10 @@ export function analyzePositionHistory(input: PositionHistoryInput): PositionHis
     const drawdown = peakValue ? subtract(peakValue, value) : ratio(0n, 1n)
     if (compare(drawdown, maximumDrawdown) > 0) {
       maximumDrawdown = drawdown
-      maximumDrawdownRate = peakValue && peakValue.numerator > 0n
-        ? ratio(drawdown.numerator * peakValue.denominator, drawdown.denominator * peakValue.numerator)
-        : ratio(0n, 1n)
+      maximumDrawdownRate =
+        peakValue && peakValue.numerator > 0n
+          ? ratio(drawdown.numerator * peakValue.denominator, drawdown.denominator * peakValue.numerator)
+          : ratio(0n, 1n)
     }
 
     points.push({
