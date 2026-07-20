@@ -13,7 +13,8 @@
     "swaps:evidence": "node --enable-source-maps dist/swaps-evidence.js",
     "position:fee-share": "node --enable-source-maps dist/position-fee-share.js",
     "position:performance": "node --enable-source-maps dist/position-performance.js",
-    "position:history": "node --enable-source-maps dist/position-history.js"
+    "position:history": "node --enable-source-maps dist/position-history.js",
+    "monitor:health": "node --enable-source-maps dist/monitor-health.js"
   },
   "dependencies": {
     "@lp-mine/core": "*",
