@@ -57,7 +57,7 @@ export function readPositionFeeShareReportConfig(
       category,
       amount0,
       amount1,
-      ...(amount0 > 0n || amount1 > 0n ? { provenance } : {}),
+      ...(amount0 > 0n || amount1 > 0n ? (provenance ? { provenance } : {}) : {}),
     }
   })
 
