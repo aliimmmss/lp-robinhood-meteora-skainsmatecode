@@ -127,7 +127,8 @@ export function buildSwapEvidenceReport(config: SwapEvidenceReportConfig): SwapE
 
     return {
       mode: 'read-only',
-      status: pools.length === 0 ? 'insufficient' : warnings.length > 0 || truncatedPools.length > 0 ? 'partial' : 'complete',
+      status:
+        pools.length === 0 ? 'insufficient' : warnings.length > 0 || truncatedPools.length > 0 ? 'partial' : 'complete',
       databasePath: config.databasePath,
       windowSeconds: config.windowSeconds,
       anchoredAt,
