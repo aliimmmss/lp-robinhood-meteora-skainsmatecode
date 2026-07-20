@@ -91,12 +91,15 @@ export function formatRatio(ratio: ExactRatio, decimalPlaces = 8): string {
   }
   if (ratio.denominator <= 0n) throw new RangeError('Ratio denominator must be positive')
 
-  const integerPart = ratio.numerator / ratio.denominator
-  if (decimalPlaces === 0) return integerPart.toString()
+  const negative = ratio.numerator < 0n
+  const numerator = negative ? -ratio.numerator : ratio.numerator
+  const integerPart = numerator / ratio.denominator
+  const sign = negative && numerator !== 0n ? '-' : ''
+  if (decimalPlaces === 0) return `${sign}${integerPart}`
 
   const scale = powerOfTen(decimalPlaces)
-  const fractionalPart = ((ratio.numerator % ratio.denominator) * scale) / ratio.denominator
-  return `${integerPart}.${fractionalPart.toString().padStart(decimalPlaces, '0')}`
+  const fractionalPart = ((numerator % ratio.denominator) * scale) / ratio.denominator
+  return `${sign}${integerPart}.${fractionalPart.toString().padStart(decimalPlaces, '0')}`
 }
 
 export function analyzePool(input: PoolAnalysisInput, options: PoolAnalysisOptions = {}): PoolAnalysis {
