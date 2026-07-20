@@ -103,6 +103,7 @@ describe('SqlitePoolObservationStore', () => {
     const snapshots = Array.from({ length: 10_005 }, (_, index) => snapshot(BigInt(index + 1)))
     store.saveSnapshots(snapshots)
 
+    expect(store.countObservations(poolAddress)).toBe(10_005)
     expect(store.lastObservationAtOrBefore(poolAddress, new Date(baseTime + 10_005))?.block.blockNumber).toBe(10_005n)
     expect(
       store
