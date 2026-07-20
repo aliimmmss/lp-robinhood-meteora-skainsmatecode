@@ -18,6 +18,7 @@ export type {
 } from './indexer.js'
 export { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3, SUPPORTED_FEE_TIERS } from './registry.js'
 export type { SupportedFeeTier } from './registry.js'
+export { SqlitePoolIndexStore } from './sqlite-store.js'
 
 export type PoolIdentity = {
   poolAddress: Address
