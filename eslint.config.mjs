@@ -25,4 +25,10 @@ export default tseslint.config(
       '@typescript-eslint/require-await': 'off',
     },
   },
+  {
+    files: ['**/sqlite-store.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
 )
