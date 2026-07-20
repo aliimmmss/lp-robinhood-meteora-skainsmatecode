@@ -117,6 +117,7 @@ describe('position performance report', () => {
         logIndex: 1,
       }),
     ])
+    await swaps.replaceBlock(header(20n, '2026-07-20T10:30:00.000Z'), [])
     swaps.close()
 
     const report = buildPositionPerformanceReport(config(path))
