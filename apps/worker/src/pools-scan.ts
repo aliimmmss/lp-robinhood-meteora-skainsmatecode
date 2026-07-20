@@ -16,7 +16,11 @@ export type PoolScanConfig = {
 
 export function readPoolScanConfig(environment: NodeJS.ProcessEnv = process.env): PoolScanConfig {
   const startBlock = parseRequiredBigInt(environment.LP_MINE_START_BLOCK, 'LP_MINE_START_BLOCK')
-  const confirmationDepth = parseOptionalBigInt(environment.LP_MINE_CONFIRMATION_DEPTH, 12n, 'LP_MINE_CONFIRMATION_DEPTH')
+  const confirmationDepth = parseOptionalBigInt(
+    environment.LP_MINE_CONFIRMATION_DEPTH,
+    12n,
+    'LP_MINE_CONFIRMATION_DEPTH',
+  )
   const maxBlockSpan = parseOptionalBigInt(environment.LP_MINE_MAX_BLOCK_SPAN, 2_000n, 'LP_MINE_MAX_BLOCK_SPAN')
 
   if (confirmationDepth < 0n) throw new Error('LP_MINE_CONFIRMATION_DEPTH must be non-negative')
