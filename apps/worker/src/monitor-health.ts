@@ -8,6 +8,7 @@ export type MonitorAlertSeverity = 'warning' | 'critical'
 export type MonitorAlertCode = 'missing-pool' | 'stale-observation' | 'history-risk' | 'source-warning'
 
 export type MonitorAlert = {
+  alertKey: string
   severity: MonitorAlertSeverity
   code: MonitorAlertCode
   poolAddress: `0x${string}`
@@ -28,11 +29,32 @@ export type MonitorPoolHealth = {
   warnings: readonly string[]
 }
 
+export type MonitorHealthSummary = {
+  poolCounts: {
+    total: number
+    healthy: number
+    degraded: number
+    critical: number
+  }
+  alertCounts: {
+    total: number
+    warning: number
+    critical: number
+    byCode: Record<MonitorAlertCode, number>
+  }
+  oldestObservationAgeSeconds: number | null
+}
+
 export type MonitorHealthReport = {
   mode: 'read-only'
   generatedAt: Date
   status: MonitorHealthStatus
+  source: {
+    databasePath: string
+    historyGeneratedAt: Date
+  }
   maximumObservationAgeSeconds: number
+  summary: MonitorHealthSummary
   pools: readonly MonitorPoolHealth[]
   alerts: readonly MonitorAlert[]
   disclaimer: string
@@ -45,6 +67,38 @@ function statusFromAlerts(alerts: readonly MonitorAlert[]): MonitorHealthStatus 
 
 function riskSeverity(flag: PoolHistoryRiskFlag): MonitorAlertSeverity {
   return flag === 'persistent-zero-liquidity' || flag === 'insufficient-observations' ? 'critical' : 'warning'
+}
+
+function alertKey(code: MonitorAlertCode, poolAddress: `0x${string}`, feeTier: number, detail?: string): string {
+  return [code, poolAddress.toLowerCase(), feeTier.toString(), detail].filter((part) => part !== undefined).join(':')
+}
+
+function summarizeCounts(pools: readonly MonitorPoolHealth[], alerts: readonly MonitorAlert[]): MonitorHealthSummary {
+  const poolCounts = {
+    total: pools.length,
+    healthy: pools.filter((pool) => pool.status === 'healthy').length,
+    degraded: pools.filter((pool) => pool.status === 'degraded').length,
+    critical: pools.filter((pool) => pool.status === 'critical').length,
+  }
+  const byCode: Record<MonitorAlertCode, number> = {
+    'missing-pool': 0,
+    'stale-observation': 0,
+    'history-risk': 0,
+    'source-warning': 0,
+  }
+  for (const alert of alerts) byCode[alert.code] += 1
+  const ages = pools.flatMap((pool) => (pool.ageSeconds === null ? [] : [pool.ageSeconds]))
+
+  return {
+    poolCounts,
+    alertCounts: {
+      total: alerts.length,
+      warning: alerts.filter((alert) => alert.severity === 'warning').length,
+      critical: alerts.filter((alert) => alert.severity === 'critical').length,
+      byCode,
+    },
+    oldestObservationAgeSeconds: ages.length === 0 ? null : Math.max(...ages),
+  }
 }
 
 export function summarizeMonitorHealth(
@@ -62,6 +116,7 @@ export function summarizeMonitorHealth(
 
   for (const missing of history.missingPools) {
     const alert: MonitorAlert = {
+      alertKey: alertKey('missing-pool', missing.poolAddress, missing.feeTier),
       severity: 'critical',
       code: 'missing-pool',
       poolAddress: missing.poolAddress,
@@ -88,6 +143,7 @@ export function summarizeMonitorHealth(
     const poolAlerts: MonitorAlert[] = []
     if (ageSeconds > maximumObservationAgeSeconds) {
       poolAlerts.push({
+        alertKey: alertKey('stale-observation', analysis.poolAddress, analysis.feeTier),
         severity: 'warning',
         code: 'stale-observation',
         poolAddress: analysis.poolAddress,
@@ -98,6 +154,7 @@ export function summarizeMonitorHealth(
     }
     for (const flag of analysis.riskFlags) {
       poolAlerts.push({
+        alertKey: alertKey('history-risk', analysis.poolAddress, analysis.feeTier, flag),
         severity: riskSeverity(flag),
         code: 'history-risk',
         poolAddress: analysis.poolAddress,
@@ -108,6 +165,7 @@ export function summarizeMonitorHealth(
     }
     for (const warning of analysis.warnings) {
       poolAlerts.push({
+        alertKey: alertKey('source-warning', analysis.poolAddress, analysis.feeTier, warning),
         severity: 'warning',
         code: 'source-warning',
         poolAddress: analysis.poolAddress,
@@ -134,14 +192,19 @@ export function summarizeMonitorHealth(
   alerts.sort((left, right) => {
     if (left.severity !== right.severity) return left.severity === 'critical' ? -1 : 1
     if (left.feeTier !== right.feeTier) return left.feeTier - right.feeTier
-    return left.code.localeCompare(right.code)
+    return left.alertKey.localeCompare(right.alertKey)
   })
 
   return {
     mode: 'read-only',
     generatedAt: now,
     status: statusFromAlerts(alerts),
+    source: {
+      databasePath: history.databasePath,
+      historyGeneratedAt: history.generatedAt,
+    },
     maximumObservationAgeSeconds,
+    summary: summarizeCounts(pools, alerts),
     pools,
     alerts,
     disclaimer:
