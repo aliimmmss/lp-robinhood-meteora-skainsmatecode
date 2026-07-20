@@ -63,33 +63,36 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
   const observations = new SqlitePoolObservationStore(config.databasePath)
   const swaps = new SqliteSwapIndexStore(config.databasePath)
   try {
-    const allObservations = observations.listObservations(pool.poolAddress, { limit: 10_000 })
     const latestSwapTime = coverage.latestTimestamp
-    const eligibleObservations = latestSwapTime
-      ? allObservations.filter((observation) => observation.block.observedAt <= latestSwapTime)
-      : []
-    const exitObservation = eligibleObservations.at(-1) ?? null
+    const exitObservation = latestSwapTime
+      ? observations.lastObservationAtOrBefore(pool.poolAddress, latestSwapTime)
+      : null
     const from = exitObservation
       ? new Date(exitObservation.block.observedAt.getTime() - config.windowSeconds * 1_000)
       : null
-    const windowObservations = from
-      ? eligibleObservations.filter((observation) => observation.block.observedAt >= from)
-      : []
-    const entryObservation = windowObservations[0] ?? null
+    const entryObservation = from
+      ? observations.firstObservationAtOrAfter(pool.poolAddress, from, exitObservation!.block.observedAt)
+      : null
     const warnings: string[] = []
 
     if (!latestSwapTime) warnings.push('No timestamped swap evidence is available.')
     if (coverage.missingTimestampRows > 0) {
       warnings.push(`${coverage.missingTimestampRows} swap rows lack block timestamps and are excluded.`)
     }
-    if (allObservations.length === 10_000) warnings.push('Pool observation query reached its 10000-row limit.')
-    if (windowObservations.some((observation) => observation.quality !== 'complete')) {
+    const selectedObservations = [entryObservation, exitObservation].filter(
+      (observation): observation is PoolSnapshot => observation !== null,
+    )
+    if (selectedObservations.some((observation) => observation.quality !== 'complete')) {
       warnings.push('One or more selected pool observations are partial or stale.')
     }
-    for (const observation of windowObservations) warnings.push(...observation.warnings)
+    for (const observation of selectedObservations) warnings.push(...observation.warnings)
     if (!costsSupplied) warnings.push('No explicit gas, slippage, rebalance, or other cost evidence was supplied.')
 
-    if (!entryObservation || !exitObservation || entryObservation === exitObservation) {
+    if (
+      !entryObservation ||
+      !exitObservation ||
+      entryObservation.block.blockNumber === exitObservation.block.blockNumber
+    ) {
       return emptyReport(config, pool.poolAddress, coverage, entryObservation, exitObservation, warnings)
     }
 

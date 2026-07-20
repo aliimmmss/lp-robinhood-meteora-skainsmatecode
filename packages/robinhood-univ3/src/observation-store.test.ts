@@ -3,8 +3,13 @@ import type { PoolSnapshot } from './index.js'
 import { SqlitePoolObservationStore } from './observation-store.js'
 
 const poolAddress = '0x0000000000000000000000000000000000000010'
+const baseTime = Date.parse('2026-07-20T10:00:00.000Z')
 
-function snapshot(blockNumber: bigint, overrides: Partial<PoolSnapshot['value']> = {}): PoolSnapshot {
+function snapshot(
+  blockNumber: bigint,
+  overrides: Partial<PoolSnapshot['value']> = {},
+  observedAt = new Date(baseTime + Number(blockNumber)),
+): PoolSnapshot {
   return {
     value: {
       poolAddress,
@@ -30,7 +35,7 @@ function snapshot(blockNumber: bigint, overrides: Partial<PoolSnapshot['value']>
     block: {
       chainId: 4663,
       blockNumber,
-      observedAt: new Date(`2026-07-20T10:00:${blockNumber.toString().padStart(2, '0')}.000Z`),
+      observedAt,
     },
     quality: 'complete',
     warnings: [],
@@ -60,12 +65,51 @@ describe('SqlitePoolObservationStore', () => {
     store.close()
   })
 
-  it('supports bounded block queries and validates limits', () => {
+  it('supports bounded block and timestamp queries in either order', () => {
     const store = new SqlitePoolObservationStore(':memory:')
     store.saveSnapshots([snapshot(1n), snapshot(2n), snapshot(3n)])
 
     expect(store.listObservations(poolAddress, { fromBlock: 2n, toBlock: 3n, limit: 1 })).toHaveLength(1)
+    expect(
+      store
+        .listObservations(poolAddress, {
+          from: new Date(baseTime + 2),
+          to: new Date(baseTime + 3),
+          order: 'descending',
+        })
+        .map((observation) => observation.block.blockNumber),
+    ).toEqual([3n, 2n])
     expect(() => store.listObservations(poolAddress, { limit: 0 })).toThrow(/limit/)
+    expect(() => store.listObservations(poolAddress, { fromBlock: 3n, toBlock: 2n })).toThrow(/fromBlock/)
+    expect(() =>
+      store.listObservations(poolAddress, { from: new Date(baseTime + 3), to: new Date(baseTime + 2) }),
+    ).toThrow(/from/)
+    store.close()
+  })
+
+  it('finds first, last, and strict predecessor observations by time', () => {
+    const store = new SqlitePoolObservationStore(':memory:')
+    store.saveSnapshots([snapshot(1n), snapshot(2n), snapshot(3n)])
+
+    expect(store.firstObservationAtOrAfter(poolAddress, new Date(baseTime + 2))?.block.blockNumber).toBe(2n)
+    expect(store.lastObservationAtOrBefore(poolAddress, new Date(baseTime + 2))?.block.blockNumber).toBe(2n)
+    expect(store.predecessorObservation(poolAddress, new Date(baseTime + 2))?.block.blockNumber).toBe(1n)
+    expect(store.predecessorObservation(poolAddress, new Date(baseTime + 1))).toBeNull()
+    store.close()
+  })
+
+  it('retrieves the newest rows beyond the former 10000-row scan boundary', () => {
+    const store = new SqlitePoolObservationStore(':memory:')
+    const snapshots = Array.from({ length: 10_005 }, (_, index) => snapshot(BigInt(index + 1)))
+    store.saveSnapshots(snapshots)
+
+    expect(store.countObservations(poolAddress)).toBe(10_005)
+    expect(store.lastObservationAtOrBefore(poolAddress, new Date(baseTime + 10_005))?.block.blockNumber).toBe(10_005n)
+    expect(
+      store
+        .listObservations(poolAddress, { order: 'descending', limit: 3 })
+        .map((observation) => observation.block.blockNumber),
+    ).toEqual([10_005n, 10_004n, 10_003n])
     store.close()
   })
 })

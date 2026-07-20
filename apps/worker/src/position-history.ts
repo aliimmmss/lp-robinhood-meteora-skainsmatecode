@@ -52,27 +52,27 @@ export function buildPositionHistoryReport(config: PositionFeeShareReportConfig)
     if (coverage.missingTimestampRows > 0) {
       warnings.push(`${coverage.missingTimestampRows} swap rows lack timestamps and are excluded.`)
     }
-
-    const allObservations = observationsStore.listObservations(pool.poolAddress, { limit: 10_000 })
-    if (allObservations.length === 10_000) warnings.push('Pool observation query reached its 10000-row limit.')
     if (!coverage.latestTimestamp) {
       warnings.push('No timestamped swap evidence is available for the selected pool.')
       return emptyReport(config, pool.poolAddress, null, null, warnings)
     }
 
-    const eligible = allObservations.filter((observation) => observation.block.observedAt <= coverage.latestTimestamp!)
-    const latest = eligible.at(-1) ?? null
+    const latest = observationsStore.lastObservationAtOrBefore(pool.poolAddress, coverage.latestTimestamp)
     if (!latest) {
       warnings.push('No pool observations are aligned with timestamped swap evidence.')
       return emptyReport(config, pool.poolAddress, null, null, warnings)
     }
 
     const from = new Date(latest.block.observedAt.getTime() - config.windowSeconds * 1_000)
-    const windowObservations = eligible.filter((observation) => observation.block.observedAt >= from)
-    const selectedObservations = windowObservations.slice(-OBSERVATION_LIMIT)
-    if (windowObservations.length > selectedObservations.length) {
-      warnings.push(`Observation history was truncated to the latest ${OBSERVATION_LIMIT} points.`)
-    }
+    const newestWindowObservations = observationsStore.listObservations(pool.poolAddress, {
+      from,
+      to: latest.block.observedAt,
+      order: 'descending',
+      limit: OBSERVATION_LIMIT + 1,
+    })
+    const truncated = newestWindowObservations.length > OBSERVATION_LIMIT
+    const selectedObservations = newestWindowObservations.slice(0, OBSERVATION_LIMIT).reverse()
+    if (truncated) warnings.push(`Observation history was truncated to the latest ${OBSERVATION_LIMIT} points.`)
     if (selectedObservations.length < 2) {
       warnings.push('At least two aligned pool observations are required.')
       return emptyReport(
