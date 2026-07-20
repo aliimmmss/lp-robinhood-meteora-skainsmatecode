@@ -44,11 +44,7 @@ export async function runLiveSmoke(rpcUrl = process.env.ROBINHOOD_RPC_URL): Prom
   const readClient = createViemReadClient(publicClient)
   const pools = []
   for (const feeTier of SUPPORTED_FEE_TIERS) {
-    const poolAddress = await readClient.getPool(
-      ROBINHOOD_UNISWAP_V3.wrappedNative,
-      ROBINHOOD_USDG,
-      feeTier,
-    )
+    const poolAddress = await readClient.getPool(ROBINHOOD_UNISWAP_V3.wrappedNative, ROBINHOOD_USDG, feeTier)
     if (poolAddress === zeroAddress) continue
 
     const snapshot = await readVerifiedPoolSnapshot({
@@ -83,7 +79,7 @@ export async function runLiveSmoke(rpcUrl = process.env.ROBINHOOD_RPC_URL): Prom
 const isEntrypoint = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 if (isEntrypoint) {
   runLiveSmoke().catch((error: unknown) => {
-    const message = error instanceof Error ? error.stack ?? error.message : String(error)
+    const message = error instanceof Error ? (error.stack ?? error.message) : String(error)
     process.stderr.write(`${message}\n`)
     process.exitCode = 1
   })
