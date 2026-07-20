@@ -117,14 +117,29 @@ describe('position performance report', () => {
         logIndex: 1,
       }),
     ])
-    await swaps.replaceBlock(header(20n, '2026-07-20T10:30:00.000Z'), [])
+    await swaps.replaceBlock(header(20n, '2026-07-20T10:30:00.000Z'), [
+      normalizeSwapLog({
+        poolAddress: pool.poolAddress,
+        sender: '0x0000000000000000000000000000000000000001',
+        recipient: '0x0000000000000000000000000000000000000002',
+        amount0: -1n,
+        amount1: 1n,
+        sqrtPriceX96: 1n << 96n,
+        activeLiquidity: 900_000n,
+        tick: 20,
+        blockNumber: 20n,
+        blockHash: hash(20),
+        transactionHash: hash(101),
+        logIndex: 0,
+      }),
+    ])
     swaps.close()
 
     const report = buildPositionPerformanceReport(config(path))
     expect(report.status).toBe('complete')
     expect(report.entryObservation?.block.blockNumber).toBe(10n)
     expect(report.exitObservation?.block.blockNumber).toBe(20n)
-    expect(report.totalMatchingSwaps).toBe(1)
+    expect(report.totalMatchingSwaps).toBe(2)
     expect(report.scenarios.map((scenario) => scenario.name)).toEqual(['lower', 'endpoint', 'upper'])
     expect(report.scenarios[0]?.fees0).toBe(0n)
     expect(report.scenarios[1]?.fees0).toBeGreaterThan(0n)
