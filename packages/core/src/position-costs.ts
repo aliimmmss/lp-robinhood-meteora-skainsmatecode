@@ -76,7 +76,8 @@ function costValue(entry: PositionCostEntry, price: ExactRatio): ExactRatio {
 function validateProvenance(provenance: PositionEvidenceProvenance | undefined, label: string): readonly string[] {
   if (!provenance) return [`${label} has no provenance source or observation timestamp.`]
   if (provenance.source.trim().length === 0) throw new RangeError(`${label} provenance source must not be empty`)
-  if (Number.isNaN(provenance.observedAt.getTime())) throw new RangeError(`${label} provenance observedAt must be valid`)
+  if (Number.isNaN(provenance.observedAt.getTime()))
+    throw new RangeError(`${label} provenance observedAt must be valid`)
   if (provenance.reference !== undefined && provenance.reference.trim().length === 0) {
     throw new RangeError(`${label} provenance reference must not be empty when supplied`)
   }

@@ -94,13 +94,12 @@ function parseEvidenceProvenance(environment: NodeJS.ProcessEnv): PositionEviden
   const any = source !== undefined || observedAtValue !== undefined || reference !== undefined
   if (!any) return undefined
   if (source === undefined || observedAtValue === undefined) {
-    throw new Error(
-      'LP_MINE_POSITION_EVIDENCE_SOURCE and LP_MINE_POSITION_EVIDENCE_OBSERVED_AT are required together',
-    )
+    throw new Error('LP_MINE_POSITION_EVIDENCE_SOURCE and LP_MINE_POSITION_EVIDENCE_OBSERVED_AT are required together')
   }
   if (source.trim().length === 0) throw new Error('LP_MINE_POSITION_EVIDENCE_SOURCE must not be empty')
   const observedAt = new Date(observedAtValue)
-  if (Number.isNaN(observedAt.getTime())) throw new Error('LP_MINE_POSITION_EVIDENCE_OBSERVED_AT must be a valid timestamp')
+  if (Number.isNaN(observedAt.getTime()))
+    throw new Error('LP_MINE_POSITION_EVIDENCE_OBSERVED_AT must be a valid timestamp')
   if (reference !== undefined && reference.trim().length === 0) {
     throw new Error('LP_MINE_POSITION_EVIDENCE_REFERENCE must not be empty when supplied')
   }
