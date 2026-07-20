@@ -4,9 +4,6 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "references": [
-    { "path": "../../packages/core" },
-    { "path": "../../packages/robinhood-univ3" }
-  ],
+  "references": [{ "path": "../../packages/core" }, { "path": "../../packages/robinhood-univ3" }],
   "include": ["src/**/*.ts"]
 }
