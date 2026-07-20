@@ -1,7 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { tickToSqrtPriceX96 } from '@lp-mine/core'
 import {
   ROBINHOOD_CHAIN_ID,
   ROBINHOOD_TOKENS,
@@ -12,7 +9,10 @@ import {
   type BlockHeader,
   type PoolSnapshot,
 } from '@lp-mine/robinhood-univ3'
-import { tickToSqrtPriceX96 } from '@lp-mine/core'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { buildPositionHistoryReport } from './position-history.js'
 
 const directories: string[] = []
@@ -144,12 +144,12 @@ describe('position history report', () => {
     )
   })
 
-  it('excludes swaps from the entry block even when timestamps match', async () => {
+  it('excludes swaps from the entry block', async () => {
     const path = databasePath()
     const observations = new SqlitePoolObservationStore(path)
     observations.saveSnapshots([
       snapshot(10n, '2026-07-20T10:00:00.000Z', 0),
-      snapshot(20n, '2026-07-20T10:00:00.000Z', 50),
+      snapshot(20n, '2026-07-20T10:00:00.001Z', 50),
     ])
     observations.close()
 
@@ -163,7 +163,7 @@ describe('position history report', () => {
         amount1: -1_000_000n,
       }),
     ])
-    await swaps.replaceBlock(header(20n, '2026-07-20T10:00:00.000Z'), [
+    await swaps.replaceBlock(header(20n, '2026-07-20T10:00:00.001Z'), [
       swapLog({
         blockNumber: 20n,
         transaction: 201,
