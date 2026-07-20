@@ -16,6 +16,14 @@ export const ROBINHOOD_UNISWAP_V3 = Object.freeze({
   publicRpcUrl: string
 }>
 
+export const ROBINHOOD_TOKENS = Object.freeze({
+  wrappedNative: ROBINHOOD_UNISWAP_V3.wrappedNative,
+  usdg: getAddress('0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168'),
+}) satisfies Readonly<{
+  wrappedNative: Address
+  usdg: Address
+}>
+
 export const SUPPORTED_FEE_TIERS = Object.freeze([100, 500, 3000, 10_000] as const)
 export type SupportedFeeTier = (typeof SUPPORTED_FEE_TIERS)[number]
 
