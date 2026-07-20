@@ -18,7 +18,13 @@ export type {
 } from './indexer.js'
 export { SqlitePoolObservationStore } from './observation-store.js'
 export type { PoolObservationQuery } from './observation-store.js'
-export { ROBINHOOD_CHAIN_ID, ROBINHOOD_TOKENS, ROBINHOOD_UNISWAP_V3, SUPPORTED_FEE_TIERS } from './registry.js'
+export {
+  ROBINHOOD_CHAIN_ID,
+  ROBINHOOD_TOKENS,
+  ROBINHOOD_UNISWAP_V3,
+  ROBINHOOD_WETH_USDG_POOLS,
+  SUPPORTED_FEE_TIERS,
+} from './registry.js'
 export type { SupportedFeeTier } from './registry.js'
 export { SqlitePoolIndexStore } from './sqlite-store.js'
 
