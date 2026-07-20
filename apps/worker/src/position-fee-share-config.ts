@@ -19,7 +19,8 @@ export function readPositionFeeShareReportConfig(
     'LP_MINE_POSITION_LIQUIDITY',
   )
 
-  if (tickLower >= tickUpper) throw new Error('LP_MINE_POSITION_TICK_LOWER must be less than LP_MINE_POSITION_TICK_UPPER')
+  if (tickLower >= tickUpper)
+    throw new Error('LP_MINE_POSITION_TICK_LOWER must be less than LP_MINE_POSITION_TICK_UPPER')
 
   return {
     databasePath: environment.LP_MINE_DATABASE_PATH ?? './data/robinhood-univ3.sqlite',
