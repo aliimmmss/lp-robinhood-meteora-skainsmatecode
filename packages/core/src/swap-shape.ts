@@ -7,3 +7,5 @@ export function classifyCanonicalSwap(amount0: bigint, amount1: bigint): Canonic
   if ((amount0 > 0n) === (amount1 > 0n)) {
     throw new RangeError('Canonical swap token deltas must have opposite signs')
   }
+  return amount0 > 0n ? 'token0-input' : 'token1-input'
+}
