@@ -88,10 +88,11 @@ export async function syncPoolCreatedEvents(args: {
     return emptyResult(checkpoint, rewoundFrom)
   }
 
-  const toBlock = minBigInt(confirmedHead, checkpoint.nextBlock + maxBlockSpan - 1n)
+  const fromBlock = checkpoint.nextBlock
+  const toBlock = minBigInt(confirmedHead, fromBlock + maxBlockSpan - 1n)
   let eventsWritten = 0
 
-  for (let blockNumber = checkpoint.nextBlock; blockNumber <= toBlock; blockNumber += 1n) {
+  for (let blockNumber = fromBlock; blockNumber <= toBlock; blockNumber += 1n) {
     const header = await args.source.getBlockHeader(blockNumber)
     if (checkpoint.lastProcessedBlock && header.parentHash !== checkpoint.lastProcessedBlock.hash) {
       rewoundFrom = checkpoint.lastProcessedBlock.number
@@ -118,7 +119,7 @@ export async function syncPoolCreatedEvents(args: {
   }
 
   return {
-    processedFrom: checkpoint.nextBlock - BigInt(toBlock - (checkpoint.nextBlock - 1n)) - 1n,
+    processedFrom: fromBlock,
     processedTo: toBlock,
     eventsWritten,
     rewoundFrom,
