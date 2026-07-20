@@ -88,7 +88,11 @@ export function buildPositionPerformanceReport(config: PositionFeeShareReportCon
     for (const observation of selectedObservations) warnings.push(...observation.warnings)
     if (!costsSupplied) warnings.push('No explicit gas, slippage, rebalance, or other cost evidence was supplied.')
 
-    if (!entryObservation || !exitObservation || entryObservation.block.blockNumber === exitObservation.block.blockNumber) {
+    if (
+      !entryObservation ||
+      !exitObservation ||
+      entryObservation.block.blockNumber === exitObservation.block.blockNumber
+    ) {
       return emptyReport(config, pool.poolAddress, coverage, entryObservation, exitObservation, warnings)
     }
 

@@ -173,12 +173,14 @@ export class SqlitePoolObservationStore {
     validateTimestamp(observedAt, 'Observation lower-bound timestamp')
     if (to) validateTimestamp(to, 'Observation upper-bound timestamp')
     if (to && observedAt > to) throw new RangeError('Observation lower-bound timestamp must not exceed upper bound')
-    return this.listObservations(poolAddress, {
-      from: observedAt,
-      ...(to ? { to } : {}),
-      order: 'ascending',
-      limit: 1,
-    })[0] ?? null
+    return (
+      this.listObservations(poolAddress, {
+        from: observedAt,
+        ...(to ? { to } : {}),
+        order: 'ascending',
+        limit: 1,
+      })[0] ?? null
+    )
   }
 
   lastObservationAtOrBefore(poolAddress: Address, observedAt: Date): PoolSnapshot | null {
