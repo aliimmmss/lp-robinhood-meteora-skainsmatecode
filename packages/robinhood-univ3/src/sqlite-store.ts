@@ -44,11 +44,13 @@ export class SqlitePoolIndexStore implements CheckpointStore, PoolEventSink {
 
   async load(): Promise<IndexCheckpoint | null> {
     const row = this.#database
-      .prepare(`
+      .prepare(
+        `
         SELECT next_block, last_block_number, last_block_hash, last_parent_hash
         FROM index_checkpoint
         WHERE singleton = 1
-      `)
+      `,
+      )
       .get() as
       | {
           next_block: string
@@ -77,7 +79,8 @@ export class SqlitePoolIndexStore implements CheckpointStore, PoolEventSink {
 
   async save(checkpoint: IndexCheckpoint): Promise<void> {
     this.#database
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO index_checkpoint (
           singleton, next_block, last_block_number, last_block_hash, last_parent_hash
         ) VALUES (1, ?, ?, ?, ?)
@@ -86,7 +89,8 @@ export class SqlitePoolIndexStore implements CheckpointStore, PoolEventSink {
           last_block_number = excluded.last_block_number,
           last_block_hash = excluded.last_block_hash,
           last_parent_hash = excluded.last_parent_hash
-      `)
+      `,
+      )
       .run(
         checkpoint.nextBlock.toString(),
         checkpoint.lastProcessedBlock?.number.toString() ?? null,
@@ -98,12 +102,8 @@ export class SqlitePoolIndexStore implements CheckpointStore, PoolEventSink {
   async replaceBlock(block: BlockHeader, events: readonly IndexedPoolCreated[]): Promise<void> {
     this.#database.exec('BEGIN IMMEDIATE')
     try {
-      this.#database
-        .prepare('DELETE FROM pool_created_events WHERE block_number = ?')
-        .run(block.number.toString())
-      this.#database
-        .prepare('DELETE FROM indexed_blocks WHERE block_number = ?')
-        .run(block.number.toString())
+      this.#database.prepare('DELETE FROM pool_created_events WHERE block_number = ?').run(block.number.toString())
+      this.#database.prepare('DELETE FROM indexed_blocks WHERE block_number = ?').run(block.number.toString())
       this.#database
         .prepare('INSERT INTO indexed_blocks (block_number, block_hash, parent_hash) VALUES (?, ?, ?)')
         .run(block.number.toString(), block.hash, block.parentHash)
@@ -140,9 +140,7 @@ export class SqlitePoolIndexStore implements CheckpointStore, PoolEventSink {
       this.#database
         .prepare('DELETE FROM pool_created_events WHERE CAST(block_number AS INTEGER) >= ?')
         .run(blockNumber)
-      this.#database
-        .prepare('DELETE FROM indexed_blocks WHERE CAST(block_number AS INTEGER) >= ?')
-        .run(blockNumber)
+      this.#database.prepare('DELETE FROM indexed_blocks WHERE CAST(block_number AS INTEGER) >= ?').run(blockNumber)
       this.#database.exec('COMMIT')
     } catch (error) {
       this.#database.exec('ROLLBACK')
@@ -152,12 +150,14 @@ export class SqlitePoolIndexStore implements CheckpointStore, PoolEventSink {
 
   listPools(): readonly IndexedPoolCreated[] {
     const rows = this.#database
-      .prepare(`
+      .prepare(
+        `
         SELECT block_number, block_hash, transaction_hash, log_index,
                pool_address, token0, token1, fee_tier, tick_spacing
         FROM pool_created_events
         ORDER BY CAST(block_number AS INTEGER), log_index
-      `)
+      `,
+      )
       .all() as Array<{
       block_number: string
       block_hash: `0x${string}`
