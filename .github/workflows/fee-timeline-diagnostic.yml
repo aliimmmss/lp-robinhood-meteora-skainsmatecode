@@ -1,26 +1,30 @@
-name: Fee Timeline Diagnostic
+name: Fee Timeline Formatter
 
 on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnostics:
+  format-and-clean:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Capture formatting patch
+      - name: Apply formatter and remove workflow
         run: |
           npx prettier --write packages/core/src/position-fee-share.ts packages/core/src/position-fee-share.test.ts packages/core/src/index.ts apps/worker/src/position-history.ts
-          git diff -- . ':!.github/workflows/fee-timeline-diagnostic.yml' > prettier.patch
-      - uses: actions/upload-artifact@v4
-        with:
-          name: fee-timeline-diagnostics
-          path: prettier.patch
+          git rm .github/workflows/fee-timeline-diagnostic.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add packages/core/src/position-fee-share.ts packages/core/src/position-fee-share.test.ts packages/core/src/index.ts apps/worker/src/position-history.ts
+          git commit -m "style: format one-pass fee timeline"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
