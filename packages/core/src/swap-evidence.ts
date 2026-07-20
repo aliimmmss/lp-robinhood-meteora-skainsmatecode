@@ -1,10 +1,13 @@
 import type { TokenRef } from './index.js'
 import { formatRatio, type ExactRatio } from './pool-analysis.js'
+import { classifyCanonicalSwap } from './swap-shape.js'
 
 const FEE_DENOMINATOR = 1_000_000n
 
 export type SwapEvidenceObservationInput = {
   blockNumber: bigint
+  transactionHash: `0x${string}`
+  logIndex: number
   observedAt: Date
   amount0: bigint
   amount1: bigint
@@ -36,6 +39,8 @@ export type TokenFlowEvidence = {
   inputDecimal: string
   outputDecimal: string
   absoluteMovementDecimal: string
+  averageInputBaseUnits: ExactRatio
+  averageInputDecimal: string
   nominalGrossFee: NominalFeeEvidence
 }
 
@@ -45,6 +50,7 @@ export type SwapEvidenceAnalysis = {
   feeTier: number
   feeRate: ExactRatio
   swapCount: number
+  distinctTransactionCount: number
   token0InputSwapCount: number
   token1InputSwapCount: number
   firstBlock: bigint
@@ -85,6 +91,10 @@ function decimal(baseUnits: bigint, decimals: number, decimalPlaces = decimals):
   return formatRatio(ratio(baseUnits, powerOfTen(decimals)), Math.min(decimalPlaces, 30))
 }
 
+function ratioDecimal(baseUnits: ExactRatio, decimals: number): string {
+  return formatRatio(ratio(baseUnits.numerator, baseUnits.denominator * powerOfTen(decimals)), Math.min(decimals, 30))
+}
+
 function nominalFee(inputBaseUnits: bigint, feeTier: number, decimals: number): NominalFeeEvidence {
   const numerator = inputBaseUnits * BigInt(feeTier)
   const exactBaseUnits = ratio(numerator, FEE_DENOMINATOR)
@@ -103,9 +113,11 @@ function tokenFlow(
   token: TokenRef,
   inputBaseUnits: bigint,
   outputBaseUnits: bigint,
+  inputSwapCount: number,
   feeTier: number,
 ): TokenFlowEvidence {
   const absoluteMovementBaseUnits = inputBaseUnits + outputBaseUnits
+  const averageInputBaseUnits = ratio(inputBaseUnits, BigInt(inputSwapCount === 0 ? 1 : inputSwapCount))
   return {
     symbol: token.symbol,
     decimals: token.decimals,
@@ -115,6 +127,8 @@ function tokenFlow(
     inputDecimal: decimal(inputBaseUnits, token.decimals),
     outputDecimal: decimal(outputBaseUnits, token.decimals),
     absoluteMovementDecimal: decimal(absoluteMovementBaseUnits, token.decimals),
+    averageInputBaseUnits,
+    averageInputDecimal: ratioDecimal(averageInputBaseUnits, token.decimals),
     nominalGrossFee: nominalFee(inputBaseUnits, feeTier, token.decimals),
   }
 }
@@ -126,9 +140,11 @@ export function analyzeSwapEvidence(input: SwapEvidenceInput): SwapEvidenceAnaly
   if (input.observations.length === 0) throw new RangeError('At least one swap observation is required')
 
   const observations = [...input.observations].sort((left, right) => {
-    if (left.observedAt.getTime() !== right.observedAt.getTime())
+    if (left.observedAt.getTime() !== right.observedAt.getTime()) {
       return left.observedAt.getTime() - right.observedAt.getTime()
-    return left.blockNumber < right.blockNumber ? -1 : left.blockNumber > right.blockNumber ? 1 : 0
+    }
+    if (left.blockNumber !== right.blockNumber) return left.blockNumber < right.blockNumber ? -1 : 1
+    return left.logIndex - right.logIndex
   })
 
   let token0Input = 0n
@@ -137,22 +153,23 @@ export function analyzeSwapEvidence(input: SwapEvidenceInput): SwapEvidenceAnaly
   let token1Output = 0n
   let token0InputSwapCount = 0
   let token1InputSwapCount = 0
+  const transactions = new Set<string>()
 
   for (const observation of observations) {
     if (Number.isNaN(observation.observedAt.getTime())) throw new RangeError('Swap timestamps must be valid')
-    if (observation.amount0 === 0n && observation.amount1 === 0n)
-      throw new RangeError('Swap token deltas cannot both be zero')
-    if (observation.amount0 > 0n) {
+    if (!Number.isInteger(observation.logIndex) || observation.logIndex < 0) {
+      throw new RangeError('Swap logIndex must be a non-negative integer')
+    }
+    const direction = classifyCanonicalSwap(observation.amount0, observation.amount1)
+    transactions.add(observation.transactionHash.toLowerCase())
+    if (direction === 'token0-input') {
       token0Input += observation.amount0
+      token1Output += -observation.amount1
       token0InputSwapCount += 1
     } else {
       token0Output += -observation.amount0
-    }
-    if (observation.amount1 > 0n) {
       token1Input += observation.amount1
       token1InputSwapCount += 1
-    } else {
-      token1Output += -observation.amount1
     }
   }
 
@@ -167,17 +184,18 @@ export function analyzeSwapEvidence(input: SwapEvidenceInput): SwapEvidenceAnaly
     feeTier: input.feeTier,
     feeRate: ratio(BigInt(input.feeTier), FEE_DENOMINATOR),
     swapCount: observations.length,
+    distinctTransactionCount: transactions.size,
     token0InputSwapCount,
     token1InputSwapCount,
     firstBlock: first.blockNumber,
     lastBlock: last.blockNumber,
     firstObservedAt: first.observedAt,
     lastObservedAt: last.observedAt,
-    token0: tokenFlow(input.token0, token0Input, token0Output, input.feeTier),
-    token1: tokenFlow(input.token1, token1Input, token1Output, input.feeTier),
+    token0: tokenFlow(input.token0, token0Input, token0Output, token0InputSwapCount, input.feeTier),
+    token1: tokenFlow(input.token1, token1Input, token1Output, token1InputSwapCount, input.feeTier),
     quoteNotionalBaseUnits,
     quoteNotionalDecimal: decimal(quoteNotionalBaseUnits, quote.decimals),
     disclaimer:
-      'Nominal gross fee evidence applies the pool fee rate to observed input flow. It is not collectible LP fees, fee share, APR, or profitability.',
+      'Nominal gross fee evidence applies the pool fee rate to validated canonical input flow. It is not collectible LP fees, fee share, APR, or profitability.',
   }
 }
