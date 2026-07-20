@@ -20,7 +20,13 @@ export function readPoolHistoryReportConfig(environment: NodeJS.ProcessEnv = pro
       10_000,
       'LP_MINE_MINIMUM_COVERAGE_BPS',
     ),
-    limit: parseBoundedInteger(environment.LP_MINE_HISTORY_LIMIT, 10_000, 1, 10_000, 'LP_MINE_HISTORY_LIMIT'),
+    limit: parseBoundedInteger(
+      environment.LP_MINE_HISTORY_LIMIT,
+      10_000,
+      1,
+      10_000,
+      'LP_MINE_HISTORY_LIMIT',
+    ),
   }
 }
 
