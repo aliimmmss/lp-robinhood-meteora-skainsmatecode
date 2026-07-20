@@ -6,7 +6,32 @@ on:
     branches: [main]
 
 jobs:
+  diagnose-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Capture npm install
+        id: install
+        shell: bash
+        run: |
+          set +e
+          npm install > npm-install.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-install-log
+          path: npm-install.log
+      - name: Fail when install failed
+        if: steps.install.outputs.exit_code != '0'
+        run: exit 1
+
   verify:
+    needs: diagnose-install
     name: ${{ matrix.check }}
     runs-on: ubuntu-latest
     strategy:
