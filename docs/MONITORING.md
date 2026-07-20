@@ -15,6 +15,8 @@ npm run --workspace @lp-mine/worker monitor:health
 
 The command reads the canonical WETH/USDG pool histories and writes JSON to standard output.
 
+Consumers should treat each command result as an immutable snapshot and reconcile alerts by `alertKey` rather than by message text.
+
 ## Thresholds
 
 The health command reuses the pool-history settings:
