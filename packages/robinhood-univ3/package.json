@@ -10,7 +10,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@lp-mine/core": "workspace:*",
+    "@lp-mine/core": "*",
     "viem": "2.55.2"
   }
 }
