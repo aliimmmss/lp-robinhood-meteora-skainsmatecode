@@ -94,7 +94,10 @@ describe('analyzePoolHistory', () => {
   })
 
   it('flags coverage gaps against the expected interval', () => {
-    const result = analyzePoolHistory(history(), { expectedIntervalSeconds: 60, minimumCoverageBps: 8_000 })
+    const result = analyzePoolHistory(history(), {
+      expectedIntervalSeconds: 60,
+      minimumCoverageBps: 8_000,
+    })
     expect(result.expectedObservationCount).toBe(11)
     expect(result.riskFlags).toContain('coverage-gap')
   })
