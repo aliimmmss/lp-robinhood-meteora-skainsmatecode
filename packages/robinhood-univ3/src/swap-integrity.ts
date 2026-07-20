@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite'
 import type { Address } from 'viem'
+import { SqliteSwapIndexStore } from './swap-store.js'
 
 export type SwapEvidenceCoverage = {
   totalRows: number
@@ -9,6 +10,9 @@ export type SwapEvidenceCoverage = {
 }
 
 export function inspectSwapEvidenceCoverage(path: string, poolAddress: Address): SwapEvidenceCoverage {
+  const initializer = new SqliteSwapIndexStore(path)
+  initializer.close()
+
   const database = new DatabaseSync(path)
   try {
     const row = database
