@@ -1,3 +1,4 @@
+/* global AbortSignal, fetch */
 import process from 'node:process'
 import { createHash } from 'node:crypto'
 import {
