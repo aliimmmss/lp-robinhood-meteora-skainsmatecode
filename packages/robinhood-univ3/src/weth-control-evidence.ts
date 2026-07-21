@@ -29,7 +29,7 @@ export type WethControlVerification = Readonly<{
 }>
 
 export const ROBINHOOD_WETH_CONTROL_EVIDENCE = Object.freeze({
-  status: 'read-only-verified-role-membership-unresolved' as const,
+  status: 'read-only-control-chain-verified-authority-resolved' as const,
   chainId: ROBINHOOD_CHAIN_ID,
   sharedBlock: 15_493_693n,
   reviewedAt: '2026-07-21T10:32:42.059Z',
@@ -74,7 +74,7 @@ export const ROBINHOOD_WETH_CONTROL_EVIDENCE = Object.freeze({
         'executeCall',
         'initialize',
       ]),
-      authorityStatus: 'role-membership-unresolved' as const,
+      authorityStatus: 'role-membership-resolved-by-weth-authority-evidence' as const,
     }),
   }),
   controllerAdmin: Object.freeze({
@@ -92,16 +92,22 @@ export const ROBINHOOD_WETH_CONTROL_EVIDENCE = Object.freeze({
     }),
   }),
   controllerBeacon: null,
-  controlStatus: 'access-control-role-membership-unresolved' as const,
+  authorityEvidence: Object.freeze({
+    status: 'resolved-by-weth-authority-evidence' as const,
+    reviewedBlock: 15_692_744n,
+    module: './weth-authority-evidence.js',
+  }),
+  controlStatus: 'authority-chain-resolved-by-weth-authority-evidence' as const,
   executionEligible: false as const,
   executionBlockers: Object.freeze([
-    'The controller implementation uses non-enumerable AccessControl roles, so current role holders are not proven by direct enumeration.',
-    'ADMIN_ROLE, EXECUTOR_ROLE, and DEFAULT_ADMIN_ROLE grants and revocations must be reconstructed from independently verified evidence.',
-    'Any controller proxy, implementation, admin, role, or bytecode drift must restart review.',
-    'No simulation, wallet, signature, submission, or receipt-reconciliation gate is approved.',
+    'The complete authority chain is recorded in ROBINHOOD_WETH_AUTHORITY_EVIDENCE as a historical read-only snapshot.',
+    'Any controller proxy, implementation, admin, role, holder, Safe configuration, or bytecode drift must restart review.',
+    'No approved transaction intent, simulation, browser-wallet confirmation, submission, or receipt-reconciliation gate exists.',
   ]),
   references: Object.freeze([
     'https://github.com/aliimmmss/lp-mine-skains/issues/68#issuecomment-5032901765',
+    'https://github.com/aliimmmss/lp-mine-skains/issues/72',
+    'https://github.com/aliimmmss/lp-mine-skains/issues/99',
     'https://github.com/aliimmmss/lp-mine-skains/issues/62',
   ]),
 })
