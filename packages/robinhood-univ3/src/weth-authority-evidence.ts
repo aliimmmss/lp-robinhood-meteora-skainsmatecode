@@ -249,9 +249,7 @@ export const ROBINHOOD_WETH_AUTHORITY_EVIDENCE = Object.freeze({
   ]),
 })
 
-export function verifyRobinhoodWethAuthorityEvidence(
-  observed: WethAuthorityObservedState,
-): WethAuthorityVerification {
+export function verifyRobinhoodWethAuthorityEvidence(observed: WethAuthorityObservedState): WethAuthorityVerification {
   const expected = ROBINHOOD_WETH_AUTHORITY_EVIDENCE
   const checks: WethAuthorityCheck[] = [
     scalarCheck('chain-id', observed.chainId, expected.chainId, 'Chain ID'),
@@ -331,15 +329,30 @@ export function verifyRobinhoodWethAuthorityEvidence(
       'Controller EXECUTOR_ROLE holders',
     ),
     codeCheck('controller-executor-eoa', observed.controllerRoles.executorEoa, expected.controllerRoles.executorEoa),
-    scalarCheck('timelock-block', observed.timelock.sharedBlock, expected.timelock.sharedBlock, 'Timelock snapshot block'),
+    scalarCheck(
+      'timelock-block',
+      observed.timelock.sharedBlock,
+      expected.timelock.sharedBlock,
+      'Timelock snapshot block',
+    ),
     scalarCheck(
       'timelock-deployment-block',
       observed.timelock.deploymentBlock,
       expected.timelock.deploymentBlock,
       'Timelock deployment block',
     ),
-    scalarCheck('timelock-event-count', observed.timelock.eventCount, expected.timelock.eventCount, 'Timelock event count'),
-    hexCheck('timelock-event-digest', observed.timelock.eventDigest, expected.timelock.eventDigest, 'Timelock event digest'),
+    scalarCheck(
+      'timelock-event-count',
+      observed.timelock.eventCount,
+      expected.timelock.eventCount,
+      'Timelock event count',
+    ),
+    hexCheck(
+      'timelock-event-digest',
+      observed.timelock.eventDigest,
+      expected.timelock.eventDigest,
+      'Timelock event digest',
+    ),
     codeCheck('timelock-proxy', observed.timelock.code, expected.timelock.code),
     codeCheck('timelock-implementation', observed.timelock.implementation, expected.timelock.implementation),
     codeCheck('timelock-proxy-admin', observed.timelock.proxyAdmin, expected.timelock.proxyAdmin),
@@ -355,7 +368,12 @@ export function verifyRobinhoodWethAuthorityEvidence(
       expected.timelock.minimumDelaySeconds,
       'Timelock minimum delay',
     ),
-    booleanCheck('timelock-open-executor', observed.timelock.openExecutor, expected.timelock.openExecutor, 'Timelock open executor'),
+    booleanCheck(
+      'timelock-open-executor',
+      observed.timelock.openExecutor,
+      expected.timelock.openExecutor,
+      'Timelock open executor',
+    ),
     addressListCheck(
       'timelock-default-admin-holders',
       observed.timelock.defaultAdminHolders,
@@ -467,11 +485,7 @@ function safeChecks(
   ]
 }
 
-function codeCheck(
-  code: string,
-  observed: AuthorityCodeEvidence,
-  expected: AuthorityCodeEvidence,
-): WethAuthorityCheck {
+function codeCheck(code: string, observed: AuthorityCodeEvidence, expected: AuthorityCodeEvidence): WethAuthorityCheck {
   const matches =
     getAddress(observed.address) === expected.address &&
     observed.byteLength === expected.byteLength &&

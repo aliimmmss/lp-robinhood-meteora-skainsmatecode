@@ -18,12 +18,12 @@ The reviewed audits required the configured Alchemy endpoint for archive evidenc
 
 The durable snapshot records four reviewed audit runs:
 
-| Layer | Run | Reviewed block |
-| --- | --- | ---: |
-| Controller AccessControl history | `29837850292` | `15624191` |
-| Timelock roles and proxy controls | `29843251873` | `15664291` |
-| Parent Safe configurations | `29845750811` | `15683672` |
-| Shared nested Safe configuration | `29846927871` | `15692744` |
+| Layer                             | Run           | Reviewed block |
+| --------------------------------- | ------------- | -------------: |
+| Controller AccessControl history  | `29837850292` |     `15624191` |
+| Timelock roles and proxy controls | `29843251873` |     `15664291` |
+| Parent Safe configurations        | `29845750811` |     `15683672` |
+| Shared nested Safe configuration  | `29846927871` |     `15692744` |
 
 Every live audit remained read-only and was removed from `main` immediately after artifact review.
 
@@ -37,12 +37,12 @@ Event digest:
 
 Current role holders at block `15624191`:
 
-| Role | Holder | Classification |
-| --- | --- | --- |
-| `ADMIN_ROLE` | `0x2A153c6A1B66DBc930a8d7017230ab0253005C09` | controller proxy |
-| `EXECUTOR_ROLE` | `0x560C81fe78FcC276e460524428f1a62057Ca8173` | timelock proxy |
-| `EXECUTOR_ROLE` | `0x663703B4bC1F5e896Af2854548d6380F45F1C5D0` | EOA |
-| `EXECUTOR_ROLE` | `0x6b9F63817F1442e40Bb9c3C2207758934C323FdC` | Safe proxy |
+| Role            | Holder                                       | Classification   |
+| --------------- | -------------------------------------------- | ---------------- |
+| `ADMIN_ROLE`    | `0x2A153c6A1B66DBc930a8d7017230ab0253005C09` | controller proxy |
+| `EXECUTOR_ROLE` | `0x560C81fe78FcC276e460524428f1a62057Ca8173` | timelock proxy   |
+| `EXECUTOR_ROLE` | `0x663703B4bC1F5e896Af2854548d6380F45F1C5D0` | EOA              |
+| `EXECUTOR_ROLE` | `0x6b9F63817F1442e40Bb9c3C2207758934C323FdC` | Safe proxy       |
 
 The controller has no active event-derived `DEFAULT_ADMIN_ROLE` holder. `ADMIN_ROLE` administers itself and `EXECUTOR_ROLE`.
 
@@ -50,16 +50,16 @@ The controller has no active event-derived `DEFAULT_ADMIN_ROLE` holder. `ADMIN_R
 
 The timelock is a pinned transparent proxy:
 
-| Field | Value |
-| --- | --- |
-| Proxy | `0x560C81fe78FcC276e460524428f1a62057Ca8173` |
-| Proxy runtime hash | `0xf48156e5fbedbcb08b438f07fd522b4365eab310620cfbcdf8b9e7a788153290` |
-| Implementation | `0x145046bdd5c4bc72338f60dE5d9707BD73ff1843` |
+| Field                       | Value                                                                |
+| --------------------------- | -------------------------------------------------------------------- |
+| Proxy                       | `0x560C81fe78FcC276e460524428f1a62057Ca8173`                         |
+| Proxy runtime hash          | `0xf48156e5fbedbcb08b438f07fd522b4365eab310620cfbcdf8b9e7a788153290` |
+| Implementation              | `0x145046bdd5c4bc72338f60dE5d9707BD73ff1843`                         |
 | Implementation runtime hash | `0x17b6f897444c34a6a4f33c13f8f31bce8219a7d93a498b033559dde2604d8894` |
-| ProxyAdmin | `0x672Da8B43058D1bC78956d71d9A208E168E2a3EF` |
-| ProxyAdmin owner | controller proxy |
-| Minimum delay | 604800 seconds (7 days) |
-| Execution | open through the zero-address executor sentinel |
+| ProxyAdmin                  | `0x672Da8B43058D1bC78956d71d9A208E168E2a3EF`                         |
+| ProxyAdmin owner            | controller proxy                                                     |
+| Minimum delay               | 604800 seconds (7 days)                                              |
+| Execution                   | open through the zero-address executor sentinel                      |
 
 The complete timelock role history contains 5 events with digest:
 
@@ -81,11 +81,11 @@ All three use the canonical v1.4.1 CompatibilityFallbackHandler:
 - runtime bytes `5637`
 - runtime hash `0x7c6007a5d711cea8dfd5d91f5940ec29c7f200fe511eb1fc1397b367af3c42f9`
 
-| Safe | Configuration | Modules | Guard | Contract owner |
-| --- | --- | --- | --- | --- |
-| Controller executor `0x6b9F63817F1442e40Bb9c3C2207758934C323FdC` | 7-of-8 | none | none | nested Safe |
-| Timelock governance `0x4C0360aFedD31e53718e4343F95E40b692402462` | 6-of-8 | none | none | nested Safe |
-| Nested owner `0x3A0C507Cc7F8785C877359ad49d0476966d17a1C` | 3-of-7 | none | none | none; all owners are EOAs |
+| Safe                                                             | Configuration | Modules | Guard | Contract owner            |
+| ---------------------------------------------------------------- | ------------- | ------- | ----- | ------------------------- |
+| Controller executor `0x6b9F63817F1442e40Bb9c3C2207758934C323FdC` | 7-of-8        | none    | none  | nested Safe               |
+| Timelock governance `0x4C0360aFedD31e53718e4343F95E40b692402462` | 6-of-8        | none    | none  | nested Safe               |
+| Nested owner `0x3A0C507Cc7F8785C877359ad49d0476966d17a1C`        | 3-of-7        | none    | none  | none; all owners are EOAs |
 
 The final nested Safe audit reported no unresolved authority boundaries.
 

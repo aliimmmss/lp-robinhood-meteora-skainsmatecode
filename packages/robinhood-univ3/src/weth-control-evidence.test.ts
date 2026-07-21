@@ -39,9 +39,7 @@ describe('Robinhood WETH upgrade-control evidence', () => {
       'role-membership-resolved-by-weth-authority-evidence',
     )
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.authorityEvidence.status).toBe('resolved-by-weth-authority-evidence')
-    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.controlStatus).toBe(
-      'authority-chain-resolved-by-weth-authority-evidence',
-    )
+    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.controlStatus).toBe('authority-chain-resolved-by-weth-authority-evidence')
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.executionEligible).toBe(false)
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.executionBlockers.length).toBeGreaterThan(0)
   })
