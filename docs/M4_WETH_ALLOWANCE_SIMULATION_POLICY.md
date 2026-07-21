@@ -26,15 +26,15 @@ The companion validator operates only on inert, normalized fixtures. A `policy-c
 
 ## Pinned operation boundary
 
-| Field | Required value |
-| --- | --- |
-| Operation | `revoke-weth-allowance-for-position-manager` |
-| Chain ID | `4663` |
-| Token | WETH `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73` |
-| Spender | Uniswap v3 position manager `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3` |
-| Desired allowance | exactly `0` |
-| Native value | exactly `0` |
-| Owner | exact owner from the referenced paper report |
+| Field             | Required value                                                           |
+| ----------------- | ------------------------------------------------------------------------ |
+| Operation         | `revoke-weth-allowance-for-position-manager`                             |
+| Chain ID          | `4663`                                                                   |
+| Token             | WETH `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`                        |
+| Spender           | Uniswap v3 position manager `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3` |
+| Desired allowance | exactly `0`                                                              |
+| Native value      | exactly `0`                                                              |
+| Owner             | exact owner from the referenced paper report                             |
 
 The referenced paper report must have decision `ready-for-separate-simulation-review`, be fresh, and remain execution-ineligible. `noop` and `blocked` paper reports cannot enter this policy.
 

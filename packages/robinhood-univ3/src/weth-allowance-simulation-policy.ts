@@ -185,12 +185,7 @@ export function validateWethAllowanceSimulationEvidencePolicy(
       'Paper chain ID is pinned.',
       'Paper chain ID differs.',
     ),
-    policyCheck(
-      'paper-owner',
-      input.paper.owner !== zeroAddress,
-      'Paper owner is nonzero.',
-      'Paper owner is zero.',
-    ),
+    policyCheck('paper-owner', input.paper.owner !== zeroAddress, 'Paper owner is nonzero.', 'Paper owner is zero.'),
     policyCheck(
       'paper-token',
       input.paper.token === ROBINHOOD_UNISWAP_V3.wrappedNative,
@@ -403,10 +398,7 @@ export function validateWethAllowanceSimulationEvidencePolicy(
   }
 }
 
-function validRootCall(
-  call: WethAllowanceSimulationCall,
-  paper: WethAllowanceSimulationPaperReference,
-): boolean {
+function validRootCall(call: WethAllowanceSimulationCall, paper: WethAllowanceSimulationPaperReference): boolean {
   return (
     call.parentId === null &&
     call.depth === 0 &&
