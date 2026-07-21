@@ -125,35 +125,19 @@ function parseProposal(input: unknown): {
     }
   }
 
-  const unknownKeys = Object.keys(input).filter(
-    (key) => !(PROPOSAL_KEYS as readonly string[]).includes(key),
-  )
+  const unknownKeys = Object.keys(input).filter((key) => !(PROPOSAL_KEYS as readonly string[]).includes(key))
   checks.push(
     unknownKeys.length === 0
       ? check('proposal.known-fields', 'pass', 'Proposal contains only allowed fields.')
-      : check(
-          'proposal.known-fields',
-          'fail',
-          `Proposal contains unknown fields: ${unknownKeys.sort().join(', ')}.`,
-        ),
+      : check('proposal.known-fields', 'fail', `Proposal contains unknown fields: ${unknownKeys.sort().join(', ')}.`),
   )
 
   const schemaVersion = parseSchemaVersion(input.schemaVersion, checks)
   const intentId = parseIdentifier(input.intentId, 'proposal.intent-id', 'intentId', checks)
-  const proposalReference = parseIdentifier(
-    input.proposalReference,
-    'proposal.reference',
-    'proposalReference',
-    checks,
-  )
+  const proposalReference = parseIdentifier(input.proposalReference, 'proposal.reference', 'proposalReference', checks)
   const generatedAt = parseIsoTimestamp(input.generatedAt, 'proposal.generated-at', 'generatedAt', checks)
   const expiresAt = parseIsoTimestamp(input.expiresAt, 'proposal.expires-at', 'expiresAt', checks)
-  const expectedChainId = parsePositiveInteger(
-    input.expectedChainId,
-    'proposal.chain-id',
-    'expectedChainId',
-    checks,
-  )
+  const expectedChainId = parsePositiveInteger(input.expectedChainId, 'proposal.chain-id', 'expectedChainId', checks)
   const sender = parseAddress(input.sender, 'proposal.sender', 'sender', checks)
   const operationId = parseIdentifier(input.operationId, 'proposal.operation-id', 'operationId', checks)
   const destinationRegistryId = parseIdentifier(
@@ -216,17 +200,12 @@ function parseProposal(input: unknown): {
   }
 }
 
-function parseEvidence(
-  input: unknown,
-  checks: GuardedIntentCheck[],
-): GuardedIntentProposal['evidence'] | null {
+function parseEvidence(input: unknown, checks: GuardedIntentCheck[]): GuardedIntentProposal['evidence'] | null {
   if (!isRecord(input)) {
     checks.push(check('proposal.evidence-object', 'fail', 'evidence must be a plain object.'))
     return null
   }
-  const unknownKeys = Object.keys(input).filter(
-    (key) => !(EVIDENCE_KEYS as readonly string[]).includes(key),
-  )
+  const unknownKeys = Object.keys(input).filter((key) => !(EVIDENCE_KEYS as readonly string[]).includes(key))
   checks.push(
     unknownKeys.length === 0
       ? check('proposal.evidence-known-fields', 'pass', 'Evidence contains only allowed fields.')
@@ -243,12 +222,7 @@ function parseEvidence(
     'evidence.blockNumber',
     checks,
   )
-  const observedAt = parseIsoTimestamp(
-    input.observedAt,
-    'proposal.evidence-observed-at',
-    'evidence.observedAt',
-    checks,
-  )
+  const observedAt = parseIsoTimestamp(input.observedAt, 'proposal.evidence-observed-at', 'evidence.observedAt', checks)
   const registryBytecodeHash = parseHash(
     input.registryBytecodeHash,
     'proposal.registry-bytecode-hash',
@@ -264,9 +238,7 @@ function parseEvidence(
     unknownKeys.length > 0
   ) {
     if (blockNumber === '0') {
-      checks.push(
-        check('proposal.evidence-block-positive', 'fail', 'evidence.blockNumber must be greater than zero.'),
-      )
+      checks.push(check('proposal.evidence-block-positive', 'fail', 'evidence.blockNumber must be greater than zero.'))
     }
     return null
   }
@@ -275,11 +247,7 @@ function parseEvidence(
   return { blockNumber, observedAt, registryBytecodeHash }
 }
 
-function assessPolicy(
-  proposal: GuardedIntentProposal,
-  policy: GuardedIntentPolicy,
-  now: Date,
-): GuardedIntentCheck[] {
+function assessPolicy(proposal: GuardedIntentProposal, policy: GuardedIntentPolicy, now: Date): GuardedIntentCheck[] {
   const checks: GuardedIntentCheck[] = []
   const generatedAt = new Date(proposal.generatedAt)
   const expiresAt = new Date(proposal.expiresAt)
@@ -376,12 +344,7 @@ function parseSchemaVersion(value: unknown, checks: GuardedIntentCheck[]): 1 | n
   return null
 }
 
-function parseIdentifier(
-  value: unknown,
-  code: string,
-  name: string,
-  checks: GuardedIntentCheck[],
-): string | null {
+function parseIdentifier(value: unknown, code: string, name: string, checks: GuardedIntentCheck[]): string | null {
   if (typeof value === 'string' && IDENTIFIER_PATTERN.test(value)) {
     checks.push(check(code, 'pass', `${name} is valid.`))
     return value
@@ -390,12 +353,7 @@ function parseIdentifier(
   return null
 }
 
-function parseAddress(
-  value: unknown,
-  code: string,
-  name: string,
-  checks: GuardedIntentCheck[],
-): `0x${string}` | null {
+function parseAddress(value: unknown, code: string, name: string, checks: GuardedIntentCheck[]): `0x${string}` | null {
   if (typeof value === 'string' && ADDRESS_PATTERN.test(value)) {
     checks.push(check(code, 'pass', `${name} is a valid address.`))
     return normalizeAddress(value as `0x${string}`)
@@ -404,12 +362,7 @@ function parseAddress(
   return null
 }
 
-function parseHash(
-  value: unknown,
-  code: string,
-  name: string,
-  checks: GuardedIntentCheck[],
-): `0x${string}` | null {
+function parseHash(value: unknown, code: string, name: string, checks: GuardedIntentCheck[]): `0x${string}` | null {
   if (typeof value === 'string' && HASH_PATTERN.test(value)) {
     checks.push(check(code, 'pass', `${name} is a valid 32-byte hash.`))
     return normalizeHash(value as `0x${string}`)
@@ -418,12 +371,7 @@ function parseHash(
   return null
 }
 
-function parseIsoTimestamp(
-  value: unknown,
-  code: string,
-  name: string,
-  checks: GuardedIntentCheck[],
-): string | null {
+function parseIsoTimestamp(value: unknown, code: string, name: string, checks: GuardedIntentCheck[]): string | null {
   if (typeof value === 'string') {
     const parsed = new Date(value)
     if (!Number.isNaN(parsed.getTime()) && parsed.toISOString() === value) {
@@ -435,12 +383,7 @@ function parseIsoTimestamp(
   return null
 }
 
-function parsePositiveInteger(
-  value: unknown,
-  code: string,
-  name: string,
-  checks: GuardedIntentCheck[],
-): number | null {
+function parsePositiveInteger(value: unknown, code: string, name: string, checks: GuardedIntentCheck[]): number | null {
   if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) {
     checks.push(check(code, 'pass', `${name} is a positive integer.`))
     return value
