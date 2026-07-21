@@ -31,11 +31,17 @@ function observed(overrides: Partial<WethControlObservedState> = {}): WethContro
 }
 
 describe('Robinhood WETH upgrade-control evidence', () => {
-  it('pins the bounded controller chain while leaving role authority unresolved', () => {
-    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.status).toBe('read-only-verified-role-membership-unresolved')
+  it('pins the bounded controller chain and references the resolved authority record', () => {
+    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.status).toBe('read-only-control-chain-verified-authority-resolved')
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.sourceAgreement).toBe(true)
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.controllerImplementation.accessControl.enumerable).toBe(false)
-    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.controlStatus).toBe('access-control-role-membership-unresolved')
+    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.controllerImplementation.accessControl.authorityStatus).toBe(
+      'role-membership-resolved-by-weth-authority-evidence',
+    )
+    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.authorityEvidence.status).toBe('resolved-by-weth-authority-evidence')
+    expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.controlStatus).toBe(
+      'authority-chain-resolved-by-weth-authority-evidence',
+    )
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.executionEligible).toBe(false)
     expect(ROBINHOOD_WETH_CONTROL_EVIDENCE.executionBlockers.length).toBeGreaterThan(0)
   })
