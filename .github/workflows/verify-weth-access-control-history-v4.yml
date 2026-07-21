@@ -1,4 +1,4 @@
-name: Verify WETH AccessControl history v3
+name: Verify WETH AccessControl history v4
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: weth-access-control-history-v3
+  group: weth-access-control-history-v4
   cancel-in-progress: false
 
 jobs:
@@ -28,13 +28,16 @@ jobs:
       - name: Reconstruct role history and current holders
         id: audit
         shell: bash
-        run: node .github/scripts/audit-weth-access-control.mjs | tee access-control-audit-v3.json
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/patch-weth-access-control-v4.py
+          node .github/scripts/audit-weth-access-control.mjs | tee access-control-audit-v4.json
       - name: Upload complete normalized evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: weth-access-control-audit-v3-${{ github.run_id }}
-          path: access-control-audit-v3.json
+          name: weth-access-control-audit-v4-${{ github.run_id }}
+          path: access-control-audit-v4.json
           if-no-files-found: error
           retention-days: 30
       - name: Post compact evidence marker
@@ -47,7 +50,7 @@ jobs:
             const fs = require('fs')
             let result = null
             try {
-              result = JSON.parse(fs.readFileSync('access-control-audit-v3.json', 'utf8'))
+              result = JSON.parse(fs.readFileSync('access-control-audit-v4.json', 'utf8'))
             } catch {}
             const holders = result?.roles?.currentHolders ?? []
             const evidence = new Map((result?.holderEvidence ?? []).map((holder) => [holder.address, holder]))
@@ -65,15 +68,15 @@ jobs:
             )
             const scanLines = (result?.eventHistory?.scans ?? []).map((scan) => {
               const stats = scan.requestStats ?? {}
-              return `- ${scan.label}: status=\`${scan.status}\`, requests=\`${stats.requests ?? 0}\`, retries=\`${stats.rateLimitRetries ?? 0}\`, splits=\`${stats.splits ?? 0}\`, backoffMs=\`${stats.backoffMs ?? 0}\``
+              return `- ${scan.label}: status=\`${scan.status}\`, requests=\`${stats.requests ?? 0}\`, pages=\`${stats.pages ?? 'n/a'}\`, blockHashChecks=\`${stats.blockHashChecks ?? 'n/a'}\`, retries=\`${stats.rateLimitRetries ?? 0}\`, splits=\`${stats.splits ?? 0}\``
             })
             const lines = [
-              '<!-- weth-access-control-history-audit-v3 -->',
-              `WETH AccessControl history audit v3 run \`${context.runId}\``,
+              '<!-- weth-access-control-history-audit-v4 -->',
+              `WETH AccessControl history audit v4 run \`${context.runId}\``,
               `- event: \`${context.eventName}\``,
               `- audit step: \`${process.env.AUDIT_OUTCOME}\``,
               `- commit: \`${context.sha}\``,
-              `- artifact: \`weth-access-control-audit-v3-${context.runId}\``,
+              `- artifact: \`weth-access-control-audit-v4-${context.runId}\``,
               '',
               result
                 ? `- role membership status: \`${result.roleMembershipStatus}\``
@@ -95,7 +98,7 @@ jobs:
                 ? `- reconstruction anomalies: \`${result.roles.reconstruction.anomalies.length}\`; state mismatches: \`${result.roles.stateMismatches.length}\``
                 : '- reconstruction checks: unavailable',
               '',
-              'Log retrieval:',
+              'History sources:',
               ...(scanLines.length ? scanLines : ['- unavailable']),
               '',
               'Current holders:',
