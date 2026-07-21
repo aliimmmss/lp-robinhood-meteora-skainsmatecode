@@ -125,7 +125,7 @@ async function logsAdaptive(rpc, fromBlock, toBlock, stats, depth = 0) {
 
 function normalizeLog"""
           pattern = r"async function rawLogs\(rpc, fromBlock, toBlock\) \{.*?\n\}\n\nasync function logsAdaptive\(rpc, fromBlock, toBlock\) \{.*?\n\}\n\nfunction normalizeLog"
-          content, count = re.subn(pattern, transport, content, count=1, flags=re.S)
+          content, count = re.subn(pattern, lambda _match: transport, content, count=1, flags=re.S)
           if count != 1:
               raise SystemExit(f'transport region: expected one match, found {count}')
 
