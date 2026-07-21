@@ -161,7 +161,8 @@ describe('Telegram monitoring notifications', () => {
   it('sends JSON to Telegram and never includes the token in thrown errors', async () => {
     let requestBody: unknown
     const successFetch = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
-      requestBody = JSON.parse(String(init?.body)) as unknown
+      if (typeof init?.body !== 'string') throw new Error('expected a JSON string request body')
+      requestBody = JSON.parse(init.body) as unknown
       return new Response(JSON.stringify({ ok: true, result: { message_id: 777 } }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
