@@ -150,12 +150,7 @@ function addressCheck(
   }
 }
 
-function equalCheck(
-  code: string,
-  observed: number,
-  expected: number,
-  name: string,
-): WethProxyEvidenceCheck {
+function equalCheck(code: string, observed: number, expected: number, name: string): WethProxyEvidenceCheck {
   const matches = observed === expected
   return {
     code,
