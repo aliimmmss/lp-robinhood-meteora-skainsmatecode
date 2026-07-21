@@ -48,7 +48,9 @@ describe('WETH allowance-revocation paper mode', () => {
     expect(report.evidence.allowance.freshness).toBe('fresh')
     expect(report.evidence.allowance.ageSeconds).toBe(30)
     expect(report.evidenceDigest).toMatch(/^0x[0-9a-f]{64}$/)
-    expect(JSON.stringify(report)).not.toContain('rpc')
+    expect(JSON.stringify(report, (_key, value: unknown) => (typeof value === 'bigint' ? value.toString() : value))).not.toContain(
+      'rpc',
+    )
   })
 
   it('returns a non-signing no-op when the current allowance is zero', () => {
