@@ -3,6 +3,8 @@ name: Fix WETH authority evidence branch
 on:
   push:
     branches: [agent/m4-weth-authority-evidence]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
