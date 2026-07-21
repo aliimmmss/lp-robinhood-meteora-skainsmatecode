@@ -77,7 +77,11 @@ describe('Telegram monitoring notifications', () => {
     const store = new SqliteMonitorAlertStateStore(databasePath())
     try {
       seed(store)
-      const sender = vi.fn(async () => ({ messageId: '101' }))
+      const sender = vi.fn(async (receivedDestination: MonitorTelegramDestination, text: string) => {
+        expect(receivedDestination).toEqual(destination)
+        expect(text).toContain('LP Mine monitoring alert')
+        return { messageId: '101' }
+      })
 
       const first = await deliverPendingTelegramAlerts(
         store,
@@ -118,7 +122,11 @@ describe('Telegram monitoring notifications', () => {
     try {
       seed(store)
       expect(store.acknowledge(alert.alertKey, deliveredAt)).toBe(true)
-      const sender = vi.fn(async () => ({ messageId: '102' }))
+      const sender = vi.fn(async (receivedDestination: MonitorTelegramDestination, text: string) => {
+        expect(receivedDestination).toEqual(destination)
+        expect(text.length).toBeGreaterThan(0)
+        return { messageId: '102' }
+      })
 
       const acknowledged = await deliverPendingTelegramAlerts(
         store,
@@ -177,7 +185,7 @@ describe('Telegram monitoring notifications', () => {
   it('sends JSON to Telegram and never includes the token in thrown errors', async () => {
     let requestBody: unknown
     const successFetch = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
-      requestBody = JSON.parse(String(init?.body))
+      requestBody = JSON.parse(String(init?.body)) as unknown
       return new Response(JSON.stringify({ ok: true, result: { message_id: 777 } }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
