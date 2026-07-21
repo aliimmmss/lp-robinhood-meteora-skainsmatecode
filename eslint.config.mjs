@@ -32,7 +32,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['.github/scripts/audit-weth-access-control.mjs'],
+    files: ['**/audit-weth-access-control.mjs'],
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^_events$' }],
     },
