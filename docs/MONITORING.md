@@ -35,6 +35,8 @@ This command computes the same health snapshot and writes alert lifecycle rows i
 
 Repeated sightings update one row rather than creating duplicates. A resolved condition can reopen under the same `alertKey`; reopening clears the prior acknowledgement so the new occurrence is not silently suppressed.
 
+The command returns all stored lifecycle rows plus active and resolved counts, making the result directly consumable by a future dashboard.
+
 Reconciliation does not deliver Telegram or email notifications. It does not change chain state, position state, or wallet state.
 
 ## Thresholds
