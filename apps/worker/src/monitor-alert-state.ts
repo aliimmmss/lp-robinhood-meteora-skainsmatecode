@@ -117,23 +117,27 @@ export class SqliteMonitorAlertStateStore {
     if (alertKey.length === 0) throw new RangeError('alertKey must not be empty')
     assertValidDate(acknowledgedAt, 'acknowledgedAt')
     const result = this.#database
-      .prepare(`
+      .prepare(
+        `
         UPDATE monitor_alert_state
         SET acknowledged_at = ?
         WHERE alert_key = ? AND status = 'active'
-      `)
+      `,
+      )
       .run(acknowledgedAt.toISOString(), alertKey)
     return Number(result.changes) === 1
   }
 
   list(status?: MonitorAlertLifecycleStatus): readonly MonitorAlertState[] {
-    const rows = (status
-      ? this.#database
-          .prepare('SELECT * FROM monitor_alert_state WHERE status = ? ORDER BY severity DESC, fee_tier, alert_key')
-          .all(status)
-      : this.#database
-          .prepare('SELECT * FROM monitor_alert_state ORDER BY status, severity DESC, fee_tier, alert_key')
-          .all()) as AlertRow[]
+    const rows = (
+      status
+        ? this.#database
+            .prepare('SELECT * FROM monitor_alert_state WHERE status = ? ORDER BY severity DESC, fee_tier, alert_key')
+            .all(status)
+        : this.#database
+            .prepare('SELECT * FROM monitor_alert_state ORDER BY status, severity DESC, fee_tier, alert_key')
+            .all()
+    ) as AlertRow[]
     return rows.map(rowToState)
   }
 
