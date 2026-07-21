@@ -12,6 +12,7 @@ export type MonitorAlertState = {
   message: string
   status: MonitorAlertLifecycleStatus
   firstSeenAt: Date
+  occurrenceStartedAt: Date
   lastSeenAt: Date
   resolvedAt: Date | null
   acknowledgedAt: Date | null
@@ -26,9 +27,14 @@ type AlertRow = {
   message: string
   status: MonitorAlertLifecycleStatus
   first_seen_at: string
+  occurrence_started_at: string | null
   last_seen_at: string
   resolved_at: string | null
   acknowledged_at: string | null
+}
+
+type TableInfoRow = {
+  name: string
 }
 
 export class SqliteMonitorAlertStateStore {
@@ -47,12 +53,24 @@ export class SqliteMonitorAlertStateStore {
         message TEXT NOT NULL,
         status TEXT NOT NULL CHECK (status IN ('active', 'resolved')),
         first_seen_at TEXT NOT NULL,
+        occurrence_started_at TEXT NOT NULL,
         last_seen_at TEXT NOT NULL,
         resolved_at TEXT,
         acknowledged_at TEXT
       ) STRICT;
+    `)
+    this.#ensureOccurrenceStartedAtColumn()
+    this.#database.exec(`
       CREATE INDEX IF NOT EXISTS monitor_alert_state_status
       ON monitor_alert_state(status, severity, fee_tier);
+      CREATE TABLE IF NOT EXISTS monitor_alert_delivery (
+        channel TEXT NOT NULL,
+        alert_key TEXT NOT NULL,
+        occurrence_started_at TEXT NOT NULL,
+        delivered_at TEXT NOT NULL,
+        provider_message_id TEXT NOT NULL,
+        PRIMARY KEY (channel, alert_key, occurrence_started_at)
+      ) STRICT;
     `)
   }
 
@@ -63,8 +81,8 @@ export class SqliteMonitorAlertStateStore {
     const upsert = this.#database.prepare(`
       INSERT INTO monitor_alert_state (
         alert_key, severity, code, pool_address, fee_tier, message,
-        status, first_seen_at, last_seen_at, resolved_at, acknowledged_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL, NULL)
+        status, first_seen_at, occurrence_started_at, last_seen_at, resolved_at, acknowledged_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, NULL, NULL)
       ON CONFLICT(alert_key) DO UPDATE SET
         severity = excluded.severity,
         code = excluded.code,
@@ -72,6 +90,10 @@ export class SqliteMonitorAlertStateStore {
         fee_tier = excluded.fee_tier,
         message = excluded.message,
         status = 'active',
+        occurrence_started_at = CASE
+          WHEN monitor_alert_state.status = 'resolved' THEN excluded.occurrence_started_at
+          ELSE monitor_alert_state.occurrence_started_at
+        END,
         last_seen_at = excluded.last_seen_at,
         resolved_at = NULL,
         acknowledged_at = CASE
@@ -90,6 +112,7 @@ export class SqliteMonitorAlertStateStore {
           alert.poolAddress,
           alert.feeTier,
           alert.message,
+          timestamp,
           timestamp,
           timestamp,
         )
@@ -114,7 +137,7 @@ export class SqliteMonitorAlertStateStore {
   }
 
   acknowledge(alertKey: string, acknowledgedAt: Date): boolean {
-    if (alertKey.length === 0) throw new RangeError('alertKey must not be empty')
+    assertNonEmpty(alertKey, 'alertKey')
     assertValidDate(acknowledgedAt, 'acknowledgedAt')
     const result = this.#database
       .prepare(
@@ -129,7 +152,7 @@ export class SqliteMonitorAlertStateStore {
   }
 
   get(alertKey: string): MonitorAlertState | null {
-    if (alertKey.length === 0) throw new RangeError('alertKey must not be empty')
+    assertNonEmpty(alertKey, 'alertKey')
     const row = this.#database.prepare('SELECT * FROM monitor_alert_state WHERE alert_key = ?').get(alertKey) as
       | AlertRow
       | undefined
@@ -140,17 +163,84 @@ export class SqliteMonitorAlertStateStore {
     const rows = (
       status
         ? this.#database
-            .prepare('SELECT * FROM monitor_alert_state WHERE status = ? ORDER BY severity DESC, fee_tier, alert_key')
+            .prepare(
+              `SELECT * FROM monitor_alert_state
+               WHERE status = ?
+               ORDER BY CASE severity WHEN 'critical' THEN 0 ELSE 1 END, fee_tier, alert_key`,
+            )
             .all(status)
         : this.#database
-            .prepare('SELECT * FROM monitor_alert_state ORDER BY status, severity DESC, fee_tier, alert_key')
+            .prepare(
+              `SELECT * FROM monitor_alert_state
+               ORDER BY status, CASE severity WHEN 'critical' THEN 0 ELSE 1 END, fee_tier, alert_key`,
+            )
             .all()
     ) as AlertRow[]
     return rows.map(rowToState)
   }
 
+  listPendingNotificationAlerts(channel: string): readonly MonitorAlertState[] {
+    assertNonEmpty(channel, 'channel')
+    const rows = this.#database
+      .prepare(
+        `
+        SELECT state.*
+        FROM monitor_alert_state AS state
+        LEFT JOIN monitor_alert_delivery AS delivery
+          ON delivery.channel = ?
+          AND delivery.alert_key = state.alert_key
+          AND delivery.occurrence_started_at = state.occurrence_started_at
+        WHERE state.status = 'active'
+          AND state.acknowledged_at IS NULL
+          AND delivery.alert_key IS NULL
+        ORDER BY CASE state.severity WHEN 'critical' THEN 0 ELSE 1 END, state.fee_tier, state.alert_key
+      `,
+      )
+      .all(channel) as AlertRow[]
+    return rows.map(rowToState)
+  }
+
+  recordNotificationDelivery(
+    channel: string,
+    alert: MonitorAlertState,
+    deliveredAt: Date,
+    providerMessageId: string,
+  ): boolean {
+    assertNonEmpty(channel, 'channel')
+    assertNonEmpty(providerMessageId, 'providerMessageId')
+    assertValidDate(deliveredAt, 'deliveredAt')
+    if (alert.status !== 'active') throw new Error('only active alerts can be recorded as delivered')
+    const result = this.#database
+      .prepare(
+        `
+        INSERT OR IGNORE INTO monitor_alert_delivery (
+          channel, alert_key, occurrence_started_at, delivered_at, provider_message_id
+        ) VALUES (?, ?, ?, ?, ?)
+      `,
+      )
+      .run(
+        channel,
+        alert.alertKey,
+        alert.occurrenceStartedAt.toISOString(),
+        deliveredAt.toISOString(),
+        providerMessageId,
+      )
+    return Number(result.changes) === 1
+  }
+
   close(): void {
     this.#database.close()
+  }
+
+  #ensureOccurrenceStartedAtColumn(): void {
+    const columns = this.#database.prepare('PRAGMA table_info(monitor_alert_state)').all() as TableInfoRow[]
+    if (columns.some((column) => column.name === 'occurrence_started_at')) return
+    this.#database.exec(`
+      ALTER TABLE monitor_alert_state ADD COLUMN occurrence_started_at TEXT;
+      UPDATE monitor_alert_state
+      SET occurrence_started_at = first_seen_at
+      WHERE occurrence_started_at IS NULL;
+    `)
   }
 }
 
@@ -164,10 +254,15 @@ function rowToState(row: AlertRow): MonitorAlertState {
     message: row.message,
     status: row.status,
     firstSeenAt: new Date(row.first_seen_at),
+    occurrenceStartedAt: new Date(row.occurrence_started_at ?? row.first_seen_at),
     lastSeenAt: new Date(row.last_seen_at),
     resolvedAt: row.resolved_at ? new Date(row.resolved_at) : null,
     acknowledgedAt: row.acknowledged_at ? new Date(row.acknowledged_at) : null,
   }
+}
+
+function assertNonEmpty(value: string, name: string): void {
+  if (value.trim().length === 0) throw new RangeError(`${name} must not be empty`)
 }
 
 function assertValidDate(value: Date, name: string): void {
