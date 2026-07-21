@@ -1,10 +1,5 @@
 import { getAddress, keccak256, type Address, type Hex } from 'viem'
-import {
-  ROBINHOOD_CHAIN_ID,
-  ROBINHOOD_TOKENS,
-  ROBINHOOD_UNISWAP_V3,
-  ROBINHOOD_WETH_USDG_POOLS,
-} from './registry.js'
+import { ROBINHOOD_CHAIN_ID, ROBINHOOD_TOKENS, ROBINHOOD_UNISWAP_V3, ROBINHOOD_WETH_USDG_POOLS } from './registry.js'
 
 export type RobinhoodRegistryRole = 'factory' | 'position-manager' | 'token' | 'pool'
 
@@ -18,11 +13,7 @@ export type RobinhoodRegistryBytecodeEvidence = Readonly<{
   executionEligible: false
 }>
 
-export type RegistryBytecodeVerificationStatus =
-  | 'verified'
-  | 'unregistered'
-  | 'missing-code'
-  | 'hash-mismatch'
+export type RegistryBytecodeVerificationStatus = 'verified' | 'unregistered' | 'missing-code' | 'hash-mismatch'
 
 export type RegistryBytecodeVerification = Readonly<{
   status: RegistryBytecodeVerificationStatus
