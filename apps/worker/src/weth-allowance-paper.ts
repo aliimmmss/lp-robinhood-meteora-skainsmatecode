@@ -16,9 +16,7 @@ import {
 import { getAddress, isAddress, parseAbi, type Address, type Hex, type PublicClient } from 'viem'
 import { pathToFileURL } from 'node:url'
 
-const allowanceAbi = parseAbi([
-  'function allowance(address owner, address spender) view returns (uint256 remaining)',
-])
+const allowanceAbi = parseAbi(['function allowance(address owner, address spender) view returns (uint256 remaining)'])
 
 export type WethAllowancePaperCommandConfig = Readonly<{
   owner: string

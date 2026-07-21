@@ -1,12 +1,4 @@
-import {
-  getAddress,
-  isAddress,
-  keccak256,
-  stringToHex,
-  zeroAddress,
-  type Address,
-  type Hex,
-} from 'viem'
+import { getAddress, isAddress, keccak256, stringToHex, zeroAddress, type Address, type Hex } from 'viem'
 import { ROBINHOOD_REGISTRY_EVIDENCE, type RegistryBytecodeVerificationStatus } from './registry-evidence.js'
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3 } from './registry.js'
 import { ROBINHOOD_WETH_AUTHORITY_EVIDENCE } from './weth-authority-evidence.js'
@@ -159,7 +151,12 @@ export function evaluateWethAllowanceRevocationPaperMode(
       'Chain ID is pinned to Robinhood Chain.',
       'Chain ID differs from the pinned Robinhood Chain ID.',
     ),
-    paperCheck('owner-address', owner !== null && owner !== zeroAddress, 'Owner address is valid.', 'Owner address is invalid.'),
+    paperCheck(
+      'owner-address',
+      owner !== null && owner !== zeroAddress,
+      'Owner address is valid.',
+      'Owner address is invalid.',
+    ),
     paperCheck(
       'token-address',
       token === ROBINHOOD_UNISWAP_V3.wrappedNative,

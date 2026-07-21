@@ -12,14 +12,14 @@ Every report includes `executionEligible: false`.
 
 ## Exact scope
 
-| Field | Pinned value |
-| --- | --- |
-| Chain ID | `4663` |
-| Token | WETH `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73` |
-| Spender | Uniswap v3 position manager `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3` |
-| Desired allowance | exactly `0` |
-| Native value | exactly `0` |
-| Owner | explicitly supplied checksummed address |
+| Field             | Pinned value                                                             |
+| ----------------- | ------------------------------------------------------------------------ |
+| Chain ID          | `4663`                                                                   |
+| Token             | WETH `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`                        |
+| Spender           | Uniswap v3 position manager `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3` |
+| Desired allowance | exactly `0`                                                              |
+| Native value      | exactly `0`                                                              |
+| Owner             | explicitly supplied checksummed address                                  |
 
 USDG, arbitrary tokens or spenders, batching, multicall, permit, typed-data signatures, recipient selection, liquidity mutation, and ambient browser-wallet state are excluded.
 
