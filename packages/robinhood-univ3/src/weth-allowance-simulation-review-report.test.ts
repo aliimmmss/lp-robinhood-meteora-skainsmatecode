@@ -188,7 +188,7 @@ describe('offline WETH allowance simulation operator review report', () => {
       {
         ...valid,
         policyResult: {
-          ...valid.policyResult,
+          ...valid.policyResult!,
           simulationAuthorized: true,
         },
       },
@@ -202,6 +202,26 @@ describe('offline WETH allowance simulation operator review report', () => {
       expect(report.simulationAuthorized).toBe(false)
       expect(report.executionEligible).toBe(false)
     }
+  })
+
+  it('blocks normalized evidence that no longer reproduces the reviewed policy digest', () => {
+    const valid = validIngestionResult()
+    const forged = {
+      ...valid,
+      normalizedInput: {
+        ...valid.normalizedInput!,
+        paper: {
+          ...valid.normalizedInput!.paper,
+          operation: 'forged-operation',
+        },
+      },
+    } as unknown as WethAllowanceSimulationIngestionResult
+
+    const report = createWethAllowanceSimulationReviewReport(forged)
+
+    expect(report.status).toBe('blocked')
+    expect(report.evidence).toBeNull()
+    expect(report.checks.some((check) => check.code === 'policy-integrity' && check.status === 'fail')).toBe(true)
   })
 
   it('produces deterministic report and text digests and changes on normalized evidence drift', () => {
@@ -261,5 +281,35 @@ describe('offline WETH allowance simulation operator review report', () => {
     expect(text).not.toContain(secret)
     expect(text).not.toContain('0xdeadbeef')
     expect(report.checks.some((check) => check.code === 'invalid-check-code')).toBe(true)
+  })
+
+  it('sanitizes malformed digests and version strings in blocked reports', () => {
+    const valid = validIngestionResult()
+    const secret = 'secret-in-malformed-metadata'
+    const forged = {
+      ...valid,
+      reviewDigest: secret,
+      fixtureVersion: secret,
+      sourceFormat: secret,
+      policyResult: {
+        ...valid.policyResult!,
+        policyVersion: secret,
+        evidenceDigest: secret,
+      },
+    } as unknown as WethAllowanceSimulationIngestionResult
+
+    const report = createWethAllowanceSimulationReviewReport(forged)
+    const serialized = JSON.stringify(report)
+    const text = renderWethAllowanceSimulationReviewText(report)
+
+    expect(report.status).toBe('blocked')
+    expect(report.evidence).toBeNull()
+    expect(report.ingestionReviewDigest).toBe(`0x${'00'.repeat(32)}`)
+    expect(report.policyEvidenceDigest).toBeNull()
+    expect(report.fixtureVersion).toBe('invalid')
+    expect(report.sourceFormat).toBeNull()
+    expect(report.policyVersion).toBeNull()
+    expect(serialized).not.toContain(secret)
+    expect(text).not.toContain(secret)
   })
 })
