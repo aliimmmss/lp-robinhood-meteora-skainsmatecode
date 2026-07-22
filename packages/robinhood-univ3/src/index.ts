@@ -141,6 +141,19 @@ export type {
   WethAllowanceRevocationReviewIntentLifecycleReference,
   WethAllowanceRevocationReviewIntentResult,
 } from './weth-allowance-revocation-review-intent.js'
+export {
+  WETH_ALLOWANCE_REVOCATION_REVIEW_CONFIRMATION_PHRASE,
+  WETH_ALLOWANCE_REVOCATION_REVIEW_CONFIRMATION_VERSION,
+  createWethAllowanceRevocationReviewConfirmation,
+  digestWethAllowanceRevocationReviewConfirmationBody,
+} from './weth-allowance-revocation-review-confirmation.js'
+export type {
+  WethAllowanceRevocationReviewConfirmation,
+  WethAllowanceRevocationReviewConfirmationBody,
+  WethAllowanceRevocationReviewConfirmationCheck,
+  WethAllowanceRevocationReviewConfirmationInput,
+  WethAllowanceRevocationReviewConfirmationResult,
+} from './weth-allowance-revocation-review-confirmation.js'
 export { ROBINHOOD_WETH_CONTROL_EVIDENCE, verifyRobinhoodWethControlEvidence } from './weth-control-evidence.js'
 export type {
   WethControlCheck,
