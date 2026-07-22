@@ -244,7 +244,17 @@ export function ingestWethAllowanceSimulationFixture(
 function parseFixture(root: Record<string, unknown>): WethAllowanceSimulationPolicyInput {
   assertExactKeys(
     root,
-    ['fixtureVersion', 'sourceFormat', 'paper', 'provider', 'identity', 'trace', 'events', 'effects', 'touchedContracts'],
+    [
+      'fixtureVersion',
+      'sourceFormat',
+      'paper',
+      'provider',
+      'identity',
+      'trace',
+      'events',
+      'effects',
+      'touchedContracts',
+    ],
     'fixture',
   )
 
@@ -445,8 +455,8 @@ function parseStateDiff(value: unknown): WethAllowanceSimulationStateDiff {
     nativeBalanceDeltas: expectArray(record.nativeBalanceDeltas, 'fixture.effects.nativeBalanceDeltas').map(
       (item, index) => parseBalanceDelta(item, `fixture.effects.nativeBalanceDeltas[${index}]`),
     ),
-    otherStateChanges: expectArray(record.otherStateChanges, 'fixture.effects.otherStateChanges').map(
-      (item, index) => expectString(item, `fixture.effects.otherStateChanges[${index}]`),
+    otherStateChanges: expectArray(record.otherStateChanges, 'fixture.effects.otherStateChanges').map((item, index) =>
+      expectString(item, `fixture.effects.otherStateChanges[${index}]`),
     ),
   }
 }
