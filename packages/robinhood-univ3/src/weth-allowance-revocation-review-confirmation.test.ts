@@ -222,6 +222,30 @@ describe('offline WETH allowance-revocation deliberate confirmation', () => {
     }
   })
 
+  it('rejects inherited expected fields combined with unsupported own fields', () => {
+    const base = validConfirmation()
+    const inherited = Object.create({ phrase: WETH_ALLOWANCE_REVOCATION_REVIEW_CONFIRMATION_PHRASE }) as Record<
+      string,
+      unknown
+    >
+    for (const [key, value] of Object.entries(base)) {
+      if (key !== 'phrase') inherited[key] = value
+    }
+    inherited.providerPayload = { apiKey: 'prototype-bypass-secret' }
+
+    const result = createWethAllowanceRevocationReviewConfirmation({
+      intentResult: validIntentResult(),
+      confirmation: inherited,
+      assessedAt,
+    })
+    const serialized = JSON.stringify(result)
+
+    expect(result.status).toBe('blocked')
+    expect(result.reasonCodes).toContain('confirmation-schema')
+    expect(serialized).not.toContain('prototype-bypass-secret')
+    expect(result.executionEligible).toBe(false)
+  })
+
   it('rejects extra secret, wallet, and transaction fields without preserving them', () => {
     const secret = 'super-secret-wallet-key'
     const candidates: readonly [unknown, unknown][] = [

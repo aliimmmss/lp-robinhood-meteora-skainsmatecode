@@ -562,7 +562,8 @@ function parseDateObject(value: unknown): Date | null {
 
 function hasExactKeys(record: Record<string, unknown>, keys: readonly string[]): boolean {
   const actualKeys = Object.keys(record)
-  return actualKeys.length === keys.length && keys.every((key) => key in record)
+  const expectedKeys = new Set(keys)
+  return actualKeys.length === expectedKeys.size && actualKeys.every((key) => expectedKeys.has(key))
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
