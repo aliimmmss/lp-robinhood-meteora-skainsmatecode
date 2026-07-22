@@ -118,8 +118,7 @@ export function createWethAllowanceRevocationReviewIntent(
       'review-window-open',
       generatedAt !== null &&
         assessedAt !== null &&
-        assessedAt.getTime() <
-          generatedAt.getTime() + WETH_ALLOWANCE_REVOCATION_REVIEW_INTENT_LIFETIME_SECONDS * 1_000,
+        assessedAt.getTime() < generatedAt.getTime() + WETH_ALLOWANCE_REVOCATION_REVIEW_INTENT_LIFETIME_SECONDS * 1_000,
       'Assessment occurs inside the fixed review lifetime.',
       'Assessment occurs after the fixed review lifetime or timestamps are unavailable.',
     ),
@@ -140,7 +139,8 @@ export function createWethAllowanceRevocationReviewIntent(
   ]
 
   const report = lifecycle.status === 'valid-for-human-review' ? asValidatedReport(input.report) : null
-  const currentState = lifecycle.status === 'valid-for-human-review' ? asValidatedCurrentState(input.currentState) : null
+  const currentState =
+    lifecycle.status === 'valid-for-human-review' ? asValidatedCurrentState(input.currentState) : null
   const evidence = report?.evidence ?? null
 
   checks.push(
@@ -266,9 +266,7 @@ export function createWethAllowanceRevocationReviewIntent(
   }
 }
 
-export function digestWethAllowanceRevocationReviewIntentBody(
-  body: WethAllowanceRevocationReviewIntentBody,
-): Hex {
+export function digestWethAllowanceRevocationReviewIntentBody(body: WethAllowanceRevocationReviewIntentBody): Hex {
   return keccak256(stringToHex(canonicalJson(body)))
 }
 

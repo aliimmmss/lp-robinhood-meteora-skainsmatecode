@@ -223,9 +223,7 @@ describe('offline WETH allowance-revocation review intent', () => {
       {
         buildCommit,
         generatedAt,
-        assessedAt: new Date(
-          generatedAt.getTime() + WETH_ALLOWANCE_REVOCATION_REVIEW_INTENT_LIFETIME_SECONDS * 1_000,
-        ),
+        assessedAt: new Date(generatedAt.getTime() + WETH_ALLOWANCE_REVOCATION_REVIEW_INTENT_LIFETIME_SECONDS * 1_000),
         reasonCode: 'review-window-open',
       },
     ]
