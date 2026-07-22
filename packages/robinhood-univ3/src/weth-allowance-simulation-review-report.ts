@@ -15,7 +15,55 @@ import {
 
 export const WETH_ALLOWANCE_SIMULATION_REVIEW_REPORT_VERSION = '1.0.0' as const
 
-const ZERO_DIGEST = `0x${'00'.repeat(32)}` as Hex
+const ZERO_DIGEST = `0x${'00'.repeat(32)}`
+
+const REVIEWED_INGESTION_CHECK_CODES = new Set([
+  'fixture-object',
+  'fixture-version',
+  'source-format',
+  'raw-material-absent',
+  'fixture-schema',
+  'policy-conformance',
+])
+
+const REVIEWED_POLICY_CHECK_CODES = new Set([
+  'policy-version',
+  'paper-operation',
+  'paper-decision',
+  'paper-execution-disabled',
+  'paper-chain',
+  'paper-owner',
+  'paper-token',
+  'paper-spender',
+  'paper-amount',
+  'paper-native-value',
+  'paper-freshness',
+  'provider-available',
+  'provider-count',
+  'provider-agreement',
+  'paper-digest-reference',
+  'shared-block',
+  'provider-freshness-threshold',
+  'provider-freshness',
+  'provider-metadata-redacted',
+  'registry-verified',
+  'authority-verified',
+  'identity-execution-disabled',
+  'proxy-identity',
+  'implementation-identity',
+  'raw-transaction-material',
+  'call-count',
+  'root-call',
+  'implementation-delegatecall',
+  'call-depth',
+  'prohibited-call-types',
+  'touched-contracts',
+  'approval-log',
+  'allowance-state-diff',
+  'token-balance-deltas',
+  'native-balance-deltas',
+  'other-state-changes',
+])
 
 export type WethAllowanceSimulationReviewReportCheck = Readonly<{
   source: 'renderer' | 'ingestion' | 'policy'
@@ -434,7 +482,7 @@ function safeUpstreamChecks(
   checks: readonly Readonly<{ code: string; status: 'pass' | 'fail' }>[],
 ): WethAllowanceSimulationReviewReportCheck[] {
   return checks.map((check) => {
-    const code = safeCheckCode(check.code)
+    const code = safeCheckCode(source, check.code)
     return {
       source,
       code,
@@ -444,8 +492,9 @@ function safeUpstreamChecks(
   })
 }
 
-function safeCheckCode(value: string): string {
-  return /^[a-z0-9-]{1,80}$/.test(value) ? value : 'invalid-check-code'
+function safeCheckCode(source: 'ingestion' | 'policy', value: string): string {
+  const reviewedCodes = source === 'ingestion' ? REVIEWED_INGESTION_CHECK_CODES : REVIEWED_POLICY_CHECK_CODES
+  return reviewedCodes.has(value) ? value : 'invalid-check-code'
 }
 
 function isHex32(value: unknown): value is Hex {
