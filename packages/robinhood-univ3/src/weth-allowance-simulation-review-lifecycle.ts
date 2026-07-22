@@ -1,10 +1,16 @@
-import { getAddress, keccak256, stringToHex, type Address, type Hex } from 'viem'
+import { getAddress, keccak256, stringToHex, zeroAddress, type Address, type Hex } from 'viem'
 import { canonicalJson, WETH_ALLOWANCE_REVOCATION_OPERATION } from './weth-allowance-paper.js'
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3 } from './registry.js'
+import {
+  WETH_ALLOWANCE_SIMULATION_FIXTURE_VERSION,
+  WETH_ALLOWANCE_SIMULATION_SOURCE_FORMAT,
+} from './weth-allowance-simulation-ingestion.js'
+import { WETH_ALLOWANCE_SIMULATION_POLICY_VERSION } from './weth-allowance-simulation-policy.js'
 import {
   WETH_ALLOWANCE_SIMULATION_REVIEW_REPORT_VERSION,
   type WethAllowanceSimulationReviewEvidence,
 } from './weth-allowance-simulation-review-report.js'
+import { ROBINHOOD_WETH_AUTHORITY_EVIDENCE } from './weth-authority-evidence.js'
 import { ROBINHOOD_WETH_PROXY_EVIDENCE } from './weth-proxy-evidence.js'
 
 export const WETH_ALLOWANCE_SIMULATION_REVIEW_LIFECYCLE_VERSION = '1.0.0' as const
@@ -190,6 +196,13 @@ export function evaluateWethAllowanceSimulationReviewLifecycle(
   const reportIntegrity =
     reportRecord !== null && reportDigest !== null && verifyReportDigest(reportRecord, reportDigest)
   const reportChecksValid = reportRecord !== null && validateReportChecks(reportRecord.checks)
+  const reportMetadataValid =
+    reportRecord !== null &&
+    isHex32(reportRecord.ingestionReviewDigest) &&
+    isHex32(reportRecord.policyEvidenceDigest) &&
+    reportRecord.fixtureVersion === WETH_ALLOWANCE_SIMULATION_FIXTURE_VERSION &&
+    reportRecord.sourceFormat === WETH_ALLOWANCE_SIMULATION_SOURCE_FORMAT &&
+    reportRecord.policyVersion === WETH_ALLOWANCE_SIMULATION_POLICY_VERSION
 
   let evidence: WethAllowanceSimulationReviewEvidence | null = null
   try {
@@ -223,6 +236,12 @@ export function evaluateWethAllowanceSimulationReviewLifecycle(
       reportDigest !== null,
       'Review report digest is valid.',
       'Review report digest is malformed.',
+    ),
+    lifecycleCheck(
+      'report-metadata',
+      reportMetadataValid,
+      'Review report metadata is pinned and complete.',
+      'Review report metadata is missing, malformed, or unpinned.',
     ),
     lifecycleCheck(
       'report-integrity',
@@ -491,6 +510,7 @@ function validateReportEvidence(evidence: WethAllowanceSimulationReviewEvidence)
   return (
     evidence.operation === WETH_ALLOWANCE_REVOCATION_OPERATION &&
     evidence.chainId === ROBINHOOD_CHAIN_ID &&
+    evidence.owner !== zeroAddress &&
     evidence.token === ROBINHOOD_UNISWAP_V3.wrappedNative &&
     evidence.proxyAddress === expectedProxy &&
     evidence.implementationAddress === expectedImplementation &&
@@ -530,6 +550,7 @@ function validateReportEvidence(evidence: WethAllowanceSimulationReviewEvidence)
     evidence.touchedContracts[0] === evidence.proxyAddress &&
     evidence.touchedContracts[1] === evidence.implementationAddress &&
     evidence.registryVerified &&
+    evidence.authorityStatus === ROBINHOOD_WETH_AUTHORITY_EVIDENCE.status &&
     evidence.authoritySourceAgreement &&
     evidence.unresolvedAuthorityBoundaryCount === 0
   )
@@ -572,17 +593,45 @@ function parseApprovalEvent(value: unknown): WethAllowanceSimulationReviewEviden
 
 function validateReportChecks(value: unknown): boolean {
   if (!Array.isArray(value) || value.length === 0) return false
-  return value.every((item) => {
+
+  const observed = {
+    renderer: new Set<string>(),
+    ingestion: new Set<string>(),
+    policy: new Set<string>(),
+  }
+
+  for (const item of value) {
     if (!isRecord(item) || !hasExactKeys(item, ['source', 'code', 'status', 'message'])) return false
-    if (item.status !== 'pass' || typeof item.message !== 'string') return false
-    if (item.source === 'renderer') return typeof item.code === 'string' && REVIEWED_RENDERER_CHECK_CODES.has(item.code)
-    if (item.source === 'ingestion')
-      return typeof item.code === 'string' && REVIEWED_INGESTION_CHECK_CODES.has(item.code)
-    if (item.source === 'policy') return typeof item.code === 'string' && REVIEWED_POLICY_CHECK_CODES.has(item.code)
+    if (item.status !== 'pass' || typeof item.message !== 'string' || typeof item.code !== 'string') return false
+
+    if (item.source === 'renderer') {
+      if (!REVIEWED_RENDERER_CHECK_CODES.has(item.code) || observed.renderer.has(item.code)) return false
+      observed.renderer.add(item.code)
+      continue
+    }
+    if (item.source === 'ingestion') {
+      if (!REVIEWED_INGESTION_CHECK_CODES.has(item.code) || observed.ingestion.has(item.code)) return false
+      observed.ingestion.add(item.code)
+      continue
+    }
+    if (item.source === 'policy') {
+      if (!REVIEWED_POLICY_CHECK_CODES.has(item.code) || observed.policy.has(item.code)) return false
+      observed.policy.add(item.code)
+      continue
+    }
     return false
-  })
+  }
+
+  return (
+    setsEqual(observed.renderer, REVIEWED_RENDERER_CHECK_CODES) &&
+    setsEqual(observed.ingestion, REVIEWED_INGESTION_CHECK_CODES) &&
+    setsEqual(observed.policy, REVIEWED_POLICY_CHECK_CODES)
+  )
 }
 
+function setsEqual(left: ReadonlySet<string>, right: ReadonlySet<string>): boolean {
+  return left.size === right.size && [...left].every((value) => right.has(value))
+}
 function verifyReportDigest(record: Record<string, unknown>, digest: Hex): boolean {
   try {
     const reportWithoutDigest = Object.fromEntries(Object.entries(record).filter(([key]) => key !== 'reportDigest'))

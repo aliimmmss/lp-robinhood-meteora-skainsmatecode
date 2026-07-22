@@ -203,10 +203,12 @@ describe('offline WETH allowance review-record lifecycle', () => {
     const cases: readonly [string, unknown][] = [
       ['report-status', { ...report, status: 'blocked' }],
       ['report-digest', { ...report, reportDigest: 'not-a-digest' }],
+      ['report-metadata', { ...report, fixtureVersion: 'forged-version' }],
       ['report-integrity', { ...report, reasons: ['tampered'] }],
       ['report-authorization-disabled', { ...report, executionEligible: true }],
       ['report-evidence', { ...report, evidence: null }],
       ['report-checks', { ...report, checks: [{ source: 'renderer', code: 'unknown', status: 'pass', message: 'x' }] }],
+      ['report-checks', { ...report, checks: [report.checks[0]!] }],
     ]
 
     for (const [reasonCode, candidate] of cases) {
