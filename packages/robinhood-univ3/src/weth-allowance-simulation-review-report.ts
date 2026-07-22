@@ -7,12 +7,15 @@ import {
 } from './weth-allowance-simulation-ingestion.js'
 import {
   WETH_ALLOWANCE_SIMULATION_POLICY_VERSION,
+  validateWethAllowanceSimulationEvidencePolicy,
   type WethAllowanceSimulationCall,
   type WethAllowanceSimulationLog,
   type WethAllowanceSimulationPolicyInput,
 } from './weth-allowance-simulation-policy.js'
 
 export const WETH_ALLOWANCE_SIMULATION_REVIEW_REPORT_VERSION = '1.0.0' as const
+
+const ZERO_DIGEST = `0x${'00'.repeat(32)}` as Hex
 
 export type WethAllowanceSimulationReviewReportCheck = Readonly<{
   source: 'renderer' | 'ingestion' | 'policy'
@@ -89,6 +92,10 @@ export type WethAllowanceSimulationReviewReport = Readonly<{
 export function createWethAllowanceSimulationReviewReport(
   ingestion: WethAllowanceSimulationIngestionResult,
 ): WethAllowanceSimulationReviewReport {
+  const ingestionDigestValid = isHex32(ingestion.reviewDigest)
+  const policyDigestValid = ingestion.policyResult === null || isHex32(ingestion.policyResult.evidenceDigest)
+  const policyIntegrityValid = verifyPolicyIntegrity(ingestion)
+
   const checks: WethAllowanceSimulationReviewReportCheck[] = [
     rendererCheck(
       'fixture-version',
@@ -101,6 +108,18 @@ export function createWethAllowanceSimulationReviewReport(
       ingestion.sourceFormat === WETH_ALLOWANCE_SIMULATION_SOURCE_FORMAT,
       'Source format matches the reviewed sanitized format.',
       'Source format is absent or unsupported.',
+    ),
+    rendererCheck(
+      'ingestion-review-digest',
+      ingestionDigestValid,
+      'Ingestion review digest is valid.',
+      'Ingestion review digest is malformed.',
+    ),
+    rendererCheck(
+      'policy-evidence-digest',
+      policyDigestValid,
+      'Policy evidence digest is valid or absent.',
+      'Policy evidence digest is malformed.',
     ),
     rendererCheck(
       'ingestion-status',
@@ -142,6 +161,12 @@ export function createWethAllowanceSimulationReviewReport(
         ingestion.policyResult.executionEligible === false,
       'Policy authorization remains disabled.',
       'Policy authorization flags are absent or not all disabled.',
+    ),
+    rendererCheck(
+      'policy-integrity',
+      policyIntegrityValid,
+      'Normalized input reproduces the reviewed conformant policy digest.',
+      'Normalized input does not reproduce the reviewed conformant policy digest.',
     ),
   ]
 
@@ -187,11 +212,23 @@ export function createWethAllowanceSimulationReviewReport(
   const reportWithoutDigest = {
     reportVersion: WETH_ALLOWANCE_SIMULATION_REVIEW_REPORT_VERSION,
     status,
-    ingestionReviewDigest: ingestion.reviewDigest,
-    policyEvidenceDigest: ingestion.policyResult?.evidenceDigest ?? null,
-    fixtureVersion: ingestion.fixtureVersion,
-    sourceFormat: ingestion.sourceFormat,
-    policyVersion: ingestion.policyResult?.policyVersion ?? null,
+    ingestionReviewDigest: ingestionDigestValid ? ingestion.reviewDigest : ZERO_DIGEST,
+    policyEvidenceDigest:
+      ingestion.policyResult !== null && isHex32(ingestion.policyResult.evidenceDigest)
+        ? ingestion.policyResult.evidenceDigest
+        : null,
+    fixtureVersion:
+      ingestion.fixtureVersion === WETH_ALLOWANCE_SIMULATION_FIXTURE_VERSION
+        ? WETH_ALLOWANCE_SIMULATION_FIXTURE_VERSION
+        : 'invalid',
+    sourceFormat:
+      ingestion.sourceFormat === WETH_ALLOWANCE_SIMULATION_SOURCE_FORMAT
+        ? WETH_ALLOWANCE_SIMULATION_SOURCE_FORMAT
+        : null,
+    policyVersion:
+      ingestion.policyResult?.policyVersion === WETH_ALLOWANCE_SIMULATION_POLICY_VERSION
+        ? WETH_ALLOWANCE_SIMULATION_POLICY_VERSION
+        : null,
     checks,
     reasons,
     evidence,
@@ -267,8 +304,27 @@ export function renderWethAllowanceSimulationReviewText(report: WethAllowanceSim
     )
   }
 
-  lines.push('', 'Checks:', ...report.checks.map((check) => `- ${check.source}:${check.code}=${check.status}`), '', report.disclaimer)
+  lines.push(
+    '',
+    'Checks:',
+    ...report.checks.map((check) => `- ${check.source}:${check.code}=${check.status}`),
+    '',
+    report.disclaimer,
+  )
   return lines.join('\n')
+}
+
+function verifyPolicyIntegrity(ingestion: WethAllowanceSimulationIngestionResult): boolean {
+  if (ingestion.normalizedInput === null || ingestion.policyResult === null) return false
+  const observedAt = ingestion.normalizedInput.providers.observedAt
+  if (!(observedAt instanceof Date) || Number.isNaN(observedAt.getTime())) return false
+
+  try {
+    const replay = validateWethAllowanceSimulationEvidencePolicy(ingestion.normalizedInput, observedAt)
+    return replay.status === 'policy-conformant' && replay.evidenceDigest === ingestion.policyResult.evidenceDigest
+  } catch {
+    return false
+  }
 }
 
 function buildReviewEvidence(input: WethAllowanceSimulationPolicyInput): WethAllowanceSimulationReviewEvidence {
@@ -386,6 +442,10 @@ function safeUpstreamChecks(
 
 function safeCheckCode(value: string): string {
   return /^[a-z0-9-]{1,80}$/.test(value) ? value : 'invalid-check-code'
+}
+
+function isHex32(value: unknown): value is Hex {
+  return typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value)
 }
 
 function rendererCheck(
