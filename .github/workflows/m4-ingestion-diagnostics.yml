@@ -1,0 +1,33 @@
+name: M4 Ingestion Diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Capture command output
+        shell: bash
+        run: |
+          mkdir -p diagnostics
+          npm run format:check > diagnostics/format.log 2>&1 || true
+          npm run lint > diagnostics/lint.log 2>&1 || true
+          npm run typecheck > diagnostics/typecheck.log 2>&1 || true
+          npm test > diagnostics/test.log 2>&1 || true
+          npm run build > diagnostics/build.log 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m4-ingestion-diagnostics
+          path: diagnostics
+          if-no-files-found: error
