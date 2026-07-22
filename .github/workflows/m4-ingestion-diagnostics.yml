@@ -17,10 +17,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Format ingestion source for artifact
+        run: npx prettier --write packages/robinhood-univ3/src/weth-allowance-simulation-ingestion.ts
       - name: Capture command output
         shell: bash
         run: |
-          mkdir -p diagnostics
+          mkdir -p diagnostics/formatted
+          cp packages/robinhood-univ3/src/weth-allowance-simulation-ingestion.ts diagnostics/formatted/
           npm run format:check > diagnostics/format.log 2>&1 || true
           npm run lint > diagnostics/lint.log 2>&1 || true
           npm run typecheck > diagnostics/typecheck.log 2>&1 || true
