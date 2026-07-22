@@ -74,6 +74,19 @@ export type {
   WethAllowanceRegistryPaperEvidence,
 } from './weth-allowance-paper.js'
 export {
+  WETH_ALLOWANCE_SIMULATION_FIXTURE_VERSION,
+  WETH_ALLOWANCE_SIMULATION_SOURCE_FORMAT,
+  ingestWethAllowanceSimulationFixture,
+} from './weth-allowance-simulation-ingestion.js'
+export type {
+  WethAllowanceSimulationIngestionCheck,
+  WethAllowanceSimulationIngestionResult,
+  WethAllowanceSimulationOfflineBalanceDelta,
+  WethAllowanceSimulationOfflineCall,
+  WethAllowanceSimulationOfflineFixture,
+  WethAllowanceSimulationOfflineLog,
+} from './weth-allowance-simulation-ingestion.js'
+export {
   WETH_ALLOWANCE_SIMULATION_MAX_AGE_SECONDS,
   WETH_ALLOWANCE_SIMULATION_MAX_CALL_DEPTH,
   WETH_ALLOWANCE_SIMULATION_POLICY_VERSION,
@@ -179,33 +192,28 @@ export async function readVerifiedPoolSnapshot(args: {
   }
   const observedAt = new Date(Number(block.timestamp) * 1_000)
   if (Number.isNaN(observedAt.getTime())) {
-    throw new PoolVerificationError('Block timestamp is invalid')
+    throw new PoolVerificationError('Pool returned invalid block timestamp')
   }
 
   return {
-    value: {
-      poolAddress,
-      token0: {
-        chainId: ROBINHOOD_CHAIN_ID,
-        address: token0Address,
-        symbol: token0Meta.symbol,
-        decimals: token0Meta.decimals,
-      },
-      token1: {
-        chainId: ROBINHOOD_CHAIN_ID,
-        address: token1Address,
-        symbol: token1Meta.symbol,
-        decimals: token1Meta.decimals,
-      },
-      feeTier: args.feeTier,
-      ...state,
+    chainId: ROBINHOOD_CHAIN_ID,
+    source: 'robinhood-uniswap-v3',
+    blockNumber: block.blockNumber,
+    observedAt,
+    poolAddress,
+    token0: {
+      chainId: ROBINHOOD_CHAIN_ID,
+      address: token0Address,
+      symbol: token0Meta.symbol,
+      decimals: token0Meta.decimals,
     },
-    block: {
-      chainId: ROBINHOOD_UNISWAP_V3.chainId,
-      blockNumber: block.blockNumber,
-      observedAt,
+    token1: {
+      chainId: ROBINHOOD_CHAIN_ID,
+      address: token1Address,
+      symbol: token1Meta.symbol,
+      decimals: token1Meta.decimals,
     },
-    quality: 'complete',
-    warnings: [],
+    feeTier: args.feeTier,
+    ...state,
   }
 }
