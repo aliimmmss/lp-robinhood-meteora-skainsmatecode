@@ -49,12 +49,11 @@ export type WethAllowanceRevocationStaticReviewDocumentMetadata = Readonly<{
   headers: typeof WETH_ALLOWANCE_REVOCATION_STATIC_REVIEW_HEADERS
 }>
 
-export type WethAllowanceRevocationStaticReviewDocument =
-  WethAllowanceRevocationStaticReviewDocumentMetadata &
-    Readonly<{
-      documentId: Hex
-      html: string
-    }>
+export type WethAllowanceRevocationStaticReviewDocument = WethAllowanceRevocationStaticReviewDocumentMetadata &
+  Readonly<{
+    documentId: Hex
+    html: string
+  }>
 
 export type WethAllowanceRevocationStaticReviewDocumentCheck = Readonly<{
   code: string
@@ -266,6 +265,10 @@ function renderStaticReviewHtml(renderedText: string): string {
     '</body>',
     '</html>',
   ].join('\n')
+}
+
+export function escapeWethAllowanceRevocationStaticReviewText(value: unknown): string | null {
+  return typeof value === 'string' ? escapeHtml(value) : null
 }
 
 function escapeHtml(value: string): string {

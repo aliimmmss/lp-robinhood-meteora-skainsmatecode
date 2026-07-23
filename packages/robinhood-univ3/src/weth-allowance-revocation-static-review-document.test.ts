@@ -199,15 +199,17 @@ function validConfirmationResult() {
   })
 }
 
-function createValidDocument(overrides: Partial<{
-  intentResult: unknown
-  confirmationResult: unknown
-  report: unknown
-  currentState: unknown
-  buildCommit: unknown
-  generatedAt: unknown
-  assessedAt: unknown
-}> = {}) {
+function createValidDocument(
+  overrides: Partial<{
+    intentResult: unknown
+    confirmationResult: unknown
+    report: unknown
+    currentState: unknown
+    buildCommit: unknown
+    generatedAt: unknown
+    assessedAt: unknown
+  }> = {},
+) {
   return createWethAllowanceRevocationStaticReviewDocument({
     intentResult: overrides.intentResult ?? validIntentResult(),
     confirmationResult: overrides.confirmationResult ?? validConfirmationResult(),
@@ -243,7 +245,9 @@ describe('static read-only WETH allowance-revocation review document', () => {
     expect(html).toContain('<meta http-equiv="Content-Security-Policy"')
     expect(html).toContain('OFFLINE FINAL REVIEW SUMMARY')
     expect(html).toContain('NO SIGNING OR EXECUTION AUTHORITY')
-    expect(html).not.toMatch(/<\s*(script|style|link|img|iframe|object|embed|form|button|input|select|textarea|a|video|audio|canvas|svg)(?:\s|>)/i)
+    expect(html).not.toMatch(
+      /<\s*(script|style|link|img|iframe|object|embed|form|button|input|select|textarea|a|video|audio|canvas|svg)(?:\s|>)/i,
+    )
     expect(html).not.toMatch(/\son[a-z0-9_-]+\s*=/i)
     expect(html).not.toMatch(/\s(?:href|src|srcset|action|formaction|poster|cite|background|ping|srcdoc|style)\s*=/i)
     expect(html).not.toMatch(/(?:https?:|javascript:|data:|blob:|file:|ftp:)/i)
