@@ -204,15 +204,17 @@ function validConfirmationResult() {
   })
 }
 
-function createValidSummary(overrides: Partial<{
-  intentResult: unknown
-  confirmationResult: unknown
-  report: unknown
-  currentState: unknown
-  buildCommit: unknown
-  generatedAt: unknown
-  assessedAt: unknown
-}> = {}) {
+function createValidSummary(
+  overrides: Partial<{
+    intentResult: unknown
+    confirmationResult: unknown
+    report: unknown
+    currentState: unknown
+    buildCommit: unknown
+    generatedAt: unknown
+    assessedAt: unknown
+  }> = {},
+) {
   return createWethAllowanceRevocationFinalReviewSummary({
     intentResult: overrides.intentResult ?? validIntentResult(),
     confirmationResult: overrides.confirmationResult ?? validConfirmationResult(),
