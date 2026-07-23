@@ -2,6 +2,13 @@
 
 Continuation plan for the LP Mine project. Read this top to bottom before writing any code. State assessed 2026-07-23.
 
+## Progress log
+
+- **Done (commit `3777f91`):** Task 1 core — `computeFeeYield` in `packages/core/src/fee-yield.ts` and the `pools:fees` worker command (`apps/worker/src/pools-fees.ts`). Ranks the four fee tiers by combined daily fees per unit liquidity from `feeGrowthGlobal` deltas. Verified against live chain data (recovered ETH price consistency). Documented in `ROBINHOOD_WORKER.md`. 219 tests pass.
+- **Done (commit pending in this session):** Task 2 — `docs/DEPOSIT_RUNBOOK.md`.
+- **Deferred:** Task 1 part 3 (time-in-range) — needs more accumulated observations than the 2 samples currently local; build once the cloud job has a day+ of tick history. Task 1 part 4 (Telegram fee summary) — optional. 
+- **Next focus:** Task 3 (post-deposit monitoring) once the user opens a position; otherwise let cloud data accumulate and re-run `pools:fees` for a steadier ranking.
+
 ## Where the project stands
 
 | Area | State |
