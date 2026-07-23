@@ -1,10 +1,13 @@
-import { keccak256, stringToHex, type Address, type Hex } from 'viem'
+import { getAddress, keccak256, stringToHex, zeroAddress, type Address, type Hex } from 'viem'
 import { canonicalJson, WETH_ALLOWANCE_REVOCATION_OPERATION } from './weth-allowance-paper.js'
 import {
   evaluateWethAllowanceRevocationReviewConfirmationLifecycle,
   type WethAllowanceRevocationReviewConfirmationLifecycleResult,
 } from './weth-allowance-revocation-review-confirmation-lifecycle.js'
-import { createWethAllowanceRevocationReviewIntent } from './weth-allowance-revocation-review-intent.js'
+import {
+  WETH_ALLOWANCE_REVOCATION_REVIEW_INTENT_LIFETIME_SECONDS,
+  createWethAllowanceRevocationReviewIntent,
+} from './weth-allowance-revocation-review-intent.js'
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3 } from './registry.js'
 import { ROBINHOOD_WETH_PROXY_EVIDENCE } from './weth-proxy-evidence.js'
 
@@ -360,9 +363,10 @@ export function digestWethAllowanceRevocationFinalReviewSummaryBody(
   return keccak256(stringToHex(canonicalJson(body)))
 }
 
-export function renderWethAllowanceRevocationFinalReviewSummary(
-  summary: WethAllowanceRevocationFinalReviewSummary,
-): string {
+export function renderWethAllowanceRevocationFinalReviewSummary(value: unknown): string | null {
+  const summary = parseFinalReviewSummary(value)
+  if (summary === null) return null
+
   return [
     'OFFLINE FINAL REVIEW SUMMARY',
     `Status: ${summary.status}`,
@@ -396,6 +400,227 @@ export function renderWethAllowanceRevocationFinalReviewSummary(
     ...summary.criticalWarnings.map((warning) => `- ${warning}`),
     `Summary ID: ${summary.summaryId}`,
   ].join('\n')
+}
+
+function parseFinalReviewSummary(value: unknown): WethAllowanceRevocationFinalReviewSummary | null {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      'schemaVersion',
+      'status',
+      'operation',
+      'chain',
+      'owner',
+      'destination',
+      'reviewedImplementation',
+      'functionName',
+      'token',
+      'spender',
+      'currentReviewedAllowance',
+      'desiredAllowance',
+      'nativeValue',
+      'actionEffect',
+      'generatedAt',
+      'expiresAt',
+      'confirmedAt',
+      'assessedAt',
+      'buildCommit',
+      'sharedBlock',
+      'blockHash',
+      'evidence',
+      'criticalWarnings',
+      'summaryId',
+    ])
+  ) {
+    return null
+  }
+  if (
+    value.schemaVersion !== WETH_ALLOWANCE_REVOCATION_FINAL_REVIEW_SUMMARY_VERSION ||
+    value.status !== 'ready-for-offline-display' ||
+    value.operation !== WETH_ALLOWANCE_REVOCATION_OPERATION ||
+    value.functionName !== 'approve' ||
+    value.desiredAllowance !== '0' ||
+    value.nativeValue !== '0'
+  ) {
+    return null
+  }
+  if (
+    !isRecord(value.chain) ||
+    !hasExactKeys(value.chain, ['name', 'chainId']) ||
+    value.chain.name !== ROBINHOOD_CHAIN_DISPLAY_NAME ||
+    value.chain.chainId !== ROBINHOOD_CHAIN_ID
+  ) {
+    return null
+  }
+  if (
+    !isRecord(value.destination) ||
+    !hasExactKeys(value.destination, ['label', 'address']) ||
+    value.destination.label !== WETH_PROXY_DISPLAY_LABEL
+  ) {
+    return null
+  }
+  if (
+    !isRecord(value.token) ||
+    !hasExactKeys(value.token, ['label', 'address', 'decimals']) ||
+    value.token.label !== WETH_DISPLAY_LABEL ||
+    value.token.decimals !== WETH_DECIMALS
+  ) {
+    return null
+  }
+  if (
+    !isRecord(value.spender) ||
+    !hasExactKeys(value.spender, ['label', 'address']) ||
+    value.spender.label !== POSITION_MANAGER_DISPLAY_LABEL
+  ) {
+    return null
+  }
+  if (
+    !isRecord(value.actionEffect) ||
+    !hasExactKeys(value.actionEffect, ['revokesAllowance', 'transfersTokens', 'description']) ||
+    value.actionEffect.revokesAllowance !== true ||
+    value.actionEffect.transfersTokens !== false ||
+    value.actionEffect.description !==
+      'Revoke the pinned WETH allowance for the pinned Uniswap v3 position manager without transferring tokens.'
+  ) {
+    return null
+  }
+  if (
+    !isRecord(value.evidence) ||
+    !hasExactKeys(value.evidence, [
+      'paperDigest',
+      'reviewReportDigest',
+      'policyDigest',
+      'currentStateDigest',
+      'intentId',
+      'confirmationId',
+      'confirmationLifecycleDigest',
+    ])
+  ) {
+    return null
+  }
+
+  const owner = parseAddress(value.owner)
+  const destination = parseAddress(value.destination.address)
+  const reviewedImplementation = parseAddress(value.reviewedImplementation)
+  const token = parseAddress(value.token.address)
+  const spender = parseAddress(value.spender.address)
+  const generatedAt = parseCanonicalIsoDate(value.generatedAt)
+  const expiresAt = parseCanonicalIsoDate(value.expiresAt)
+  const confirmedAt = parseCanonicalIsoDate(value.confirmedAt)
+  const assessedAt = parseCanonicalIsoDate(value.assessedAt)
+  const blockHash = parseHex32(value.blockHash)
+  const paperDigest = parseHex32(value.evidence.paperDigest)
+  const reviewReportDigest = parseHex32(value.evidence.reviewReportDigest)
+  const policyDigest = parseHex32(value.evidence.policyDigest)
+  const currentStateDigest = parseHex32(value.evidence.currentStateDigest)
+  const intentId = parseHex32(value.evidence.intentId)
+  const confirmationId = parseHex32(value.evidence.confirmationId)
+  const confirmationLifecycleDigest = parseHex32(value.evidence.confirmationLifecycleDigest)
+  const summaryId = parseHex32(value.summaryId)
+
+  if (
+    owner === null ||
+    owner === zeroAddress ||
+    destination !== ROBINHOOD_WETH_PROXY_EVIDENCE.proxy.address ||
+    reviewedImplementation !== ROBINHOOD_WETH_PROXY_EVIDENCE.implementation.address ||
+    token !== ROBINHOOD_UNISWAP_V3.wrappedNative ||
+    spender !== ROBINHOOD_UNISWAP_V3.positionManager ||
+    generatedAt === null ||
+    expiresAt === null ||
+    confirmedAt === null ||
+    assessedAt === null ||
+    expiresAt.getTime() - generatedAt.getTime() !== WETH_ALLOWANCE_REVOCATION_REVIEW_INTENT_LIFETIME_SECONDS * 1_000 ||
+    confirmedAt.getTime() < generatedAt.getTime() ||
+    assessedAt.getTime() < confirmedAt.getTime() ||
+    assessedAt.getTime() >= expiresAt.getTime() ||
+    typeof value.buildCommit !== 'string' ||
+    !/^[0-9a-f]{40}$/.test(value.buildCommit) ||
+    typeof value.sharedBlock !== 'string' ||
+    !/^(0|[1-9][0-9]*)$/.test(value.sharedBlock) ||
+    typeof value.currentReviewedAllowance !== 'string' ||
+    !/^[1-9][0-9]*$/.test(value.currentReviewedAllowance) ||
+    blockHash === null ||
+    paperDigest === null ||
+    reviewReportDigest === null ||
+    policyDigest === null ||
+    currentStateDigest === null ||
+    intentId === null ||
+    confirmationId === null ||
+    confirmationLifecycleDigest === null ||
+    summaryId === null ||
+    !hasExactWarnings(value.criticalWarnings)
+  ) {
+    return null
+  }
+
+  const body: WethAllowanceRevocationFinalReviewSummaryBody = {
+    schemaVersion: WETH_ALLOWANCE_REVOCATION_FINAL_REVIEW_SUMMARY_VERSION,
+    status: 'ready-for-offline-display',
+    operation: WETH_ALLOWANCE_REVOCATION_OPERATION,
+    chain: { name: ROBINHOOD_CHAIN_DISPLAY_NAME, chainId: ROBINHOOD_CHAIN_ID },
+    owner,
+    destination: { label: WETH_PROXY_DISPLAY_LABEL, address: destination },
+    reviewedImplementation,
+    functionName: 'approve',
+    token: { label: WETH_DISPLAY_LABEL, address: token, decimals: WETH_DECIMALS },
+    spender: { label: POSITION_MANAGER_DISPLAY_LABEL, address: spender },
+    currentReviewedAllowance: value.currentReviewedAllowance,
+    desiredAllowance: '0',
+    nativeValue: '0',
+    actionEffect: {
+      revokesAllowance: true,
+      transfersTokens: false,
+      description:
+        'Revoke the pinned WETH allowance for the pinned Uniswap v3 position manager without transferring tokens.',
+    },
+    generatedAt: generatedAt.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    confirmedAt: confirmedAt.toISOString(),
+    assessedAt: assessedAt.toISOString(),
+    buildCommit: value.buildCommit,
+    sharedBlock: value.sharedBlock,
+    blockHash,
+    evidence: {
+      paperDigest,
+      reviewReportDigest,
+      policyDigest,
+      currentStateDigest,
+      intentId,
+      confirmationId,
+      confirmationLifecycleDigest,
+    },
+    criticalWarnings: CRITICAL_WARNINGS,
+  }
+  if (digestWethAllowanceRevocationFinalReviewSummaryBody(body) !== summaryId) return null
+  return { ...body, summaryId }
+}
+
+function parseAddress(value: unknown): Address | null {
+  if (typeof value !== 'string') return null
+  try {
+    return getAddress(value)
+  } catch {
+    return null
+  }
+}
+
+function parseHex32(value: unknown): Hex | null {
+  return typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value) ? (value as Hex) : null
+}
+
+function parseCanonicalIsoDate(value: unknown): Date | null {
+  if (typeof value !== 'string') return null
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString() !== value) return null
+  return parsed
+}
+
+function hasExactWarnings(value: unknown): value is typeof CRITICAL_WARNINGS {
+  return (
+    Array.isArray(value) &&
+    value.length === CRITICAL_WARNINGS.length &&
+    value.every((warning, index) => warning === CRITICAL_WARNINGS[index])
+  )
 }
 
 function parseCurrentState(value: unknown): ParsedCurrentState | null {

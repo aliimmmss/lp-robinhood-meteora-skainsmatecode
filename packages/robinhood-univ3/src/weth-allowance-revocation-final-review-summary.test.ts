@@ -10,6 +10,7 @@ import {
   createWethAllowanceRevocationFinalReviewSummary,
   digestWethAllowanceRevocationFinalReviewSummaryBody,
   renderWethAllowanceRevocationFinalReviewSummary,
+  type WethAllowanceRevocationFinalReviewSummaryBody,
 } from './weth-allowance-revocation-final-review-summary.js'
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_UNISWAP_V3 } from './registry.js'
 import { WETH_ALLOWANCE_REVOCATION_OPERATION } from './weth-allowance-paper.js'
@@ -352,6 +353,29 @@ describe('offline WETH allowance-revocation final review summary', () => {
       expect(result.signingEligible).toBe(false)
       expect(result.executionEligible).toBe(false)
     }
+  })
+
+  it('refuses to render forged runtime summaries even with recomputed digests', () => {
+    const summary = createValidSummary().summary
+    if (summary === null) throw new Error('Expected summary')
+    const secret = 'forged-secret-display-copy'
+    const { summaryId, ...body } = summary
+    expect(summaryId).toBe(summary.summaryId)
+    const forgedBody = {
+      ...body,
+      criticalWarnings: [...body.criticalWarnings.slice(0, 3), secret],
+    }
+    const forged = {
+      ...forgedBody,
+      summaryId: digestWethAllowanceRevocationFinalReviewSummaryBody(
+        forgedBody as unknown as WethAllowanceRevocationFinalReviewSummaryBody,
+      ),
+    }
+
+    expect(renderWethAllowanceRevocationFinalReviewSummary(forged)).toBeNull()
+    expect(
+      renderWethAllowanceRevocationFinalReviewSummary({ ...summary, providerPayload: { apiKey: secret } }),
+    ).toBeNull()
   })
 
   it('rejects extra and inherited secret-bearing fields without copying them', () => {
