@@ -35,8 +35,41 @@ const health = data.health as {
 }
 const fees = data.fees as { configuredWindowSeconds: number; referenceLiquidity: string; pools: FeePool[] }
 
+type Opportunity = {
+  name: string
+  address: string
+  feeTierPercent: number
+  ageHours: number
+  marketCapUsd: number | null
+  reserveUsd: number
+  volume24hUsd: number
+  volumeToTvl: number
+  estDailyFeeReturnPercent: string
+  volumeTrend: 'rising' | 'steady' | 'fading'
+  passesScreen: boolean
+  screenNotes: string[]
+}
+const opportunitiesReport =
+  data.opportunities && 'opportunities' in data.opportunities
+    ? (data.opportunities as { opportunities: Opportunity[] })
+    : null
+const opportunities = opportunitiesReport ? opportunitiesReport.opportunities.slice(0, 15) : []
+
 const feePercent = (tier: number) => `${tier / 10_000}%`
 const hasFeeData = fees.pools.some((pool) => pool.status !== 'insufficient')
+
+function formatUsdCompact(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—'
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`
+  return `$${value.toFixed(0)}`
+}
+
+const trendColor = {
+  rising: 'text-emerald-400',
+  steady: 'text-neutral-400',
+  fading: 'text-amber-400',
+} as const
 
 function formatUsdgPerDay(decimal: string | null): string {
   if (decimal === null) return '—'
@@ -160,6 +193,73 @@ const favicon =
               <p class="mt-1 text-pretty text-xs text-neutral-500">
                 Fee yield needs at least two fee-growth samples per pool. Check back after the monitor
                 has run for a day.
+              </p>
+            </div>
+          )
+        }
+      </section>
+
+      <section class="mb-10">
+        <h2 class="mb-1 text-sm font-medium text-neutral-100">Opportunities</h2>
+        <p class="mb-4 text-pretty text-xs text-neutral-500">
+          All Robinhood pools ranked by estimated daily fee return (volume ÷ TVL × fee tier).
+          Screen follows the MeteoraIDN criteria: market cap ≥ $250K, 24h volume ≥ $1M, age ≥ 24h,
+          volume/TVL ≥ 0.5. Third-party data (GeckoTerminal), unverified on-chain — research signal
+          only, not a recommendation.
+        </p>
+
+        {
+          opportunities.length > 0 ? (
+            <div class="overflow-x-auto rounded-lg border border-neutral-800">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <th class="px-3 py-2 font-medium">Pool</th>
+                    <th class="px-3 py-2 text-right font-medium">Est / day</th>
+                    <th class="px-3 py-2 text-right font-medium">Vol/TVL</th>
+                    <th class="px-3 py-2 text-right font-medium">24h vol</th>
+                    <th class="px-3 py-2 text-right font-medium">TVL</th>
+                    <th class="px-3 py-2 text-right font-medium">Trend</th>
+                    <th class="px-3 py-2 text-right font-medium">Screen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {opportunities.map((entry) => (
+                    <tr class="border-t border-neutral-900">
+                      <td class="max-w-[11rem] truncate px-3 py-2 text-neutral-200">{entry.name}</td>
+                      <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-100">
+                        {entry.estDailyFeeReturnPercent}%
+                      </td>
+                      <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                        {entry.volumeToTvl.toFixed(1)}
+                      </td>
+                      <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                        {formatUsdCompact(entry.volume24hUsd)}
+                      </td>
+                      <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                        {formatUsdCompact(entry.reserveUsd)}
+                      </td>
+                      <td class={`px-3 py-2 text-right text-xs ${trendColor[entry.volumeTrend]}`}>
+                        {entry.volumeTrend}
+                      </td>
+                      <td class="px-3 py-2 text-right text-xs">
+                        {entry.passesScreen ? (
+                          <span class="text-emerald-400">pass</span>
+                        ) : (
+                          <span class="text-neutral-500">review</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="rounded-lg border border-neutral-800 p-6">
+              <p class="text-pretty text-sm text-neutral-400">Opportunity feed unavailable.</p>
+              <p class="mt-1 text-pretty text-xs text-neutral-500">
+                The third-party source did not return data on the last build. It refreshes on the next
+                deploy.
               </p>
             </div>
           )

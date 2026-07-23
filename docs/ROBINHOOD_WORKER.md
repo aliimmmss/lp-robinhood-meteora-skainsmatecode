@@ -166,6 +166,16 @@ Requires at least two observations that include fee-growth data (captured by `po
 
 Per-pool status is `complete`, `partial` (short measured window, zero active liquidity, or a non-complete observation in the pair), or `insufficient` (fewer than two fee-growth observations in the window). Each pool also reports `occupancy`: for candidate price bands (±1/2/5/10%) around the current tick, the fraction of stored observations whose tick fell inside the band. This is a backward-looking range-width signal — narrower bands earn more per unit capital but leave range sooner. Fees are realized only while a position stays in range; the numbers are an estimate of past fees per unit of liquidity, not a forward APR or a recommendation to deploy capital.
 
+### Opportunity scan (all Robinhood pools)
+
+```bash
+npm run --workspace @lp-mine/worker pools:opportunities
+```
+
+This looks beyond the pinned WETH/USDG pools. It pulls every Robinhood Chain pool from the free public GeckoTerminal API and ranks them by estimated daily fee return (24h volume ÷ TVL × fee tier). Each pool is screened against the MeteoraIDN pool-selection criteria (market cap ≥ $250K, 24h volume ≥ $1M, pool age ≥ 24h, volume/active-TVL ≥ 0.5) and flagged `passesScreen` with per-criterion notes; volume trend is classified `rising`/`steady`/`fading` from the 6h-vs-24h rate. `LP_MINE_OPPORTUNITY_PAGES` (default 3) controls how many 20-pool pages to pull.
+
+This data is third-party and unverified on-chain. It is a research signal for finding candidates, not deposit-grade evidence and not a recommendation. Promote a candidate to the pinned registry and run the on-chain fee-growth analysis before treating any number as trustworthy.
+
 A daily Telegram fee digest of this ranking is available:
 
 ```bash
