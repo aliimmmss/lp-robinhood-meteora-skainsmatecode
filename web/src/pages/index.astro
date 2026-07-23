@@ -85,6 +85,11 @@ const trendColor = {
   fading: 'text-amber-400',
 } as const
 
+function truncateAddress(address: string): string {
+  return address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address
+}
+const geckoPoolUrl = (address: string) => `https://www.geckoterminal.com/robinhood/pools/${address}`
+
 function formatUsdgPerDay(decimal: string | null): string {
   if (decimal === null) return '—'
   const usdg = Number(decimal) / 1_000_000 // USDG has 6 decimals
@@ -335,7 +340,18 @@ const favicon =
                 <tbody id="opps-body">
                   {opportunities.map((entry) => (
                     <tr class="border-t border-neutral-900">
-                      <td class="max-w-[11rem] truncate px-3 py-2 text-neutral-200">{entry.name}</td>
+                      <td class="px-3 py-2">
+                        <div class="max-w-[11rem] truncate text-neutral-200">{entry.name}</div>
+                        <a
+                          href={geckoPoolUrl(entry.address)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={entry.address}
+                          class="font-mono text-xs text-neutral-500 hover:text-neutral-300"
+                        >
+                          {truncateAddress(entry.address)}
+                        </a>
+                      </td>
                       <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-100">
                         {entry.estDailyFeeReturnPercent}%
                       </td>
@@ -482,9 +498,15 @@ const favicon =
         if (value >= 1e3) return '$' + (value / 1e3).toFixed(0) + 'K'
         return '$' + value.toFixed(0)
       }
+      function truncAddr(address: string): string {
+        return address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address
+      }
       function cells(o: Opportunity): string {
+        const addr =
+          `<a href="https://www.geckoterminal.com/robinhood/pools/${esc(o.address)}" target="_blank" rel="noopener noreferrer"` +
+          ` title="${esc(o.address)}" class="font-mono text-xs text-neutral-500 hover:text-neutral-300">${truncAddr(o.address)}</a>`
         return (
-          `<td class="max-w-[11rem] truncate px-3 py-2 text-neutral-200">${esc(o.name)}</td>` +
+          `<td class="px-3 py-2"><div class="max-w-[11rem] truncate text-neutral-200">${esc(o.name)}</div>${addr}</td>` +
           `<td class="${NUM} text-neutral-100">${o.estDailyFeeReturnPercent}%</td>` +
           `<td class="${NUM} text-neutral-400">${o.volumeToTvl.toFixed(1)}</td>` +
           `<td class="${NUM} text-neutral-400">${usd(o.volume24hUsd)}</td>` +
