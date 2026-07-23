@@ -2,7 +2,7 @@ name: M4 Static Review Document Hardening
 
 on:
   pull_request:
-    branches: [main]
+    branches: [agent/m4-static-review-document]
 
 permissions:
   contents: write
@@ -29,26 +29,26 @@ jobs:
           source = source_path.read_text()
           source = source.replace(
               """  'svg',
-] as const""",
+          ] as const""",
               """  'svg',
-  'base',
-  'area',
-  'details',
-  'summary',
-  'dialog',
-  'menu',
-  'fieldset',
-  'label',
-  'option',
-  'optgroup',
-] as const""",
+            'base',
+            'area',
+            'details',
+            'summary',
+            'dialog',
+            'menu',
+            'fieldset',
+            'label',
+            'option',
+            'optgroup',
+          ] as const""",
               1,
           )
           source = source.replace(
               """    /\s(?:href|src|srcset|action|formaction|poster|cite|background|ping|srcdoc|style)\s*=/i.test(html)
-""",
+          """,
               """    /\s(?:href|src|srcset|action|formaction|poster|cite|background|ping|srcdoc|style|contenteditable|tabindex|autofocus|popover|popovertarget|download|draggable|target|usemap)\s*=/i.test(html)
-""",
+          """,
               1,
           )
           source_path.write_text(source)
