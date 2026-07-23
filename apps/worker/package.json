@@ -12,6 +12,7 @@
     "pools:fees": "node --enable-source-maps dist/pools-fees.js",
     "fees:notify:telegram": "node --enable-source-maps dist/fees-telegram-notify.js",
     "site:data": "node --enable-source-maps dist/site-data.js",
+    "pools:opportunities": "node --enable-source-maps dist/pools-opportunities.js",
     "swaps:scan": "node --enable-source-maps dist/swaps-scan.js",
     "swaps:backfill": "node --enable-source-maps dist/swaps-backfill.js",
     "swaps:evidence": "node --enable-source-maps dist/swaps-evidence.js",
