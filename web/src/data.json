@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-23T09:00:09.537Z",
+  "health": {
+    "mode": "read-only",
+    "generatedAt": "2026-07-23T09:00:09.537Z",
+    "status": "critical",
+    "source": {
+      "databasePath": "./data/robinhood-univ3.sqlite",
+      "historyGeneratedAt": "2026-07-23T09:00:09.537Z"
+    },
+    "maximumObservationAgeSeconds": 900,
+    "summary": {
+      "poolCounts": {
+        "total": 4,
+        "healthy": 0,
+        "degraded": 3,
+        "critical": 1
+      },
+      "alertCounts": {
+        "total": 9,
+        "warning": 8,
+        "critical": 1,
+        "byCode": {
+          "missing-pool": 0,
+          "stale-observation": 4,
+          "history-risk": 5,
+          "source-warning": 0
+        }
+      },
+      "oldestObservationAgeSeconds": 2129
+    },
+    "pools": [
+      {
+        "poolAddress": "0x52e65B17fB6E5BA00Ed806f37Afcd2DaA50271Ca",
+        "feeTier": 100,
+        "status": "degraded",
+        "lastObservedAt": "2026-07-23T08:24:40.000Z",
+        "ageSeconds": 2129,
+        "observationCount": 3,
+        "coveragePercent": "25.00%",
+        "riskFlags": [
+          "coverage-gap"
+        ],
+        "warnings": []
+      },
+      {
+        "poolAddress": "0x69BfaF19C9f377BB306a89aEd9F6B07e2c1a8d9a",
+        "feeTier": 500,
+        "status": "degraded",
+        "lastObservedAt": "2026-07-23T08:24:40.000Z",
+        "ageSeconds": 2129,
+        "observationCount": 3,
+        "coveragePercent": "25.00%",
+        "riskFlags": [
+          "coverage-gap"
+        ],
+        "warnings": []
+      },
+      {
+        "poolAddress": "0xa9188730Fe85Be88ad499D7d52B099e800fB0334",
+        "feeTier": 3000,
+        "status": "degraded",
+        "lastObservedAt": "2026-07-23T08:24:40.000Z",
+        "ageSeconds": 2129,
+        "observationCount": 3,
+        "coveragePercent": "25.00%",
+        "riskFlags": [
+          "coverage-gap"
+        ],
+        "warnings": []
+      },
+      {
+        "poolAddress": "0x5f009E071F07e92B6C624e83F52F17bBDa34680D",
+        "feeTier": 10000,
+        "status": "critical",
+        "lastObservedAt": "2026-07-23T08:24:40.000Z",
+        "ageSeconds": 2129,
+        "observationCount": 3,
+        "coveragePercent": "25.00%",
+        "riskFlags": [
+          "coverage-gap",
+          "persistent-zero-liquidity"
+        ],
+        "warnings": []
+      }
+    ],
+    "alerts": [
+      {
+        "alertKey": "history-risk:0x5f009e071f07e92b6c624e83f52f17bbda34680d:10000:persistent-zero-liquidity",
+        "severity": "critical",
+        "code": "history-risk",
+        "poolAddress": "0x5f009E071F07e92B6C624e83F52F17bBDa34680D",
+        "feeTier": 10000,
+        "message": "Pool history risk flag: persistent-zero-liquidity.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "history-risk:0x52e65b17fb6e5ba00ed806f37afcd2daa50271ca:100:coverage-gap",
+        "severity": "warning",
+        "code": "history-risk",
+        "poolAddress": "0x52e65B17fB6E5BA00Ed806f37Afcd2DaA50271Ca",
+        "feeTier": 100,
+        "message": "Pool history risk flag: coverage-gap.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "stale-observation:0x52e65b17fb6e5ba00ed806f37afcd2daa50271ca:100",
+        "severity": "warning",
+        "code": "stale-observation",
+        "poolAddress": "0x52e65B17fB6E5BA00Ed806f37Afcd2DaA50271Ca",
+        "feeTier": 100,
+        "message": "Latest observation age 2129s exceeds the 900s threshold.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "history-risk:0x69bfaf19c9f377bb306a89aed9f6b07e2c1a8d9a:500:coverage-gap",
+        "severity": "warning",
+        "code": "history-risk",
+        "poolAddress": "0x69BfaF19C9f377BB306a89aEd9F6B07e2c1a8d9a",
+        "feeTier": 500,
+        "message": "Pool history risk flag: coverage-gap.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "stale-observation:0x69bfaf19c9f377bb306a89aed9f6b07e2c1a8d9a:500",
+        "severity": "warning",
+        "code": "stale-observation",
+        "poolAddress": "0x69BfaF19C9f377BB306a89aEd9F6B07e2c1a8d9a",
+        "feeTier": 500,
+        "message": "Latest observation age 2129s exceeds the 900s threshold.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "history-risk:0xa9188730fe85be88ad499d7d52b099e800fb0334:3000:coverage-gap",
+        "severity": "warning",
+        "code": "history-risk",
+        "poolAddress": "0xa9188730Fe85Be88ad499D7d52B099e800fB0334",
+        "feeTier": 3000,
+        "message": "Pool history risk flag: coverage-gap.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "stale-observation:0xa9188730fe85be88ad499d7d52b099e800fb0334:3000",
+        "severity": "warning",
+        "code": "stale-observation",
+        "poolAddress": "0xa9188730Fe85Be88ad499D7d52B099e800fB0334",
+        "feeTier": 3000,
+        "message": "Latest observation age 2129s exceeds the 900s threshold.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "history-risk:0x5f009e071f07e92b6c624e83f52f17bbda34680d:10000:coverage-gap",
+        "severity": "warning",
+        "code": "history-risk",
+        "poolAddress": "0x5f009E071F07e92B6C624e83F52F17bBDa34680D",
+        "feeTier": 10000,
+        "message": "Pool history risk flag: coverage-gap.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      },
+      {
+        "alertKey": "stale-observation:0x5f009e071f07e92b6c624e83f52f17bbda34680d:10000",
+        "severity": "warning",
+        "code": "stale-observation",
+        "poolAddress": "0x5f009E071F07e92B6C624e83F52F17bBDa34680D",
+        "feeTier": 10000,
+        "message": "Latest observation age 2129s exceeds the 900s threshold.",
+        "observedAt": "2026-07-23T08:24:40.000Z"
+      }
+    ],
+    "disclaimer": "Monitoring status summarizes stored evidence freshness, coverage, and explicit risk flags. It does not estimate APR, profitability, execution quality, or whether capital should be deployed."
+  },
+  "fees": {
+    "mode": "read-only",
+    "databasePath": "./data/robinhood-univ3.sqlite",
+    "generatedAt": "2026-07-23T09:00:09.537Z",
+    "configuredWindowSeconds": 86400,
+    "referenceLiquidity": "1000000000000000000",
+    "pools": [
+      {
+        "feeTier": 100,
+        "poolAddress": "0x52e65B17fB6E5BA00Ed806f37Afcd2DaA50271Ca",
+        "pair": "WETH/USDG",
+        "referenceLiquidity": "1000000000000000000",
+        "currentTick": -200727,
+        "currentActiveLiquidity": "1627006802667064362",
+        "occupancy": {
+          "currentTick": -200727,
+          "sampleCount": 3,
+          "bands": [
+            {
+              "label": "±1%",
+              "percent": 0.01,
+              "halfWidthTicks": 100,
+              "lowerTick": -200827,
+              "upperTick": -200627,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±2%",
+              "percent": 0.02,
+              "halfWidthTicks": 198,
+              "lowerTick": -200925,
+              "upperTick": -200529,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±5%",
+              "percent": 0.05,
+              "halfWidthTicks": 488,
+              "lowerTick": -201215,
+              "upperTick": -200239,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±10%",
+              "percent": 0.1,
+              "halfWidthTicks": 953,
+              "lowerTick": -201680,
+              "upperTick": -199774,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            }
+          ]
+        },
+        "status": "complete",
+        "windowSeconds": 2332,
+        "sampleCount": 2,
+        "earlierObservedAt": "2026-07-23T07:45:48.000Z",
+        "laterObservedAt": "2026-07-23T08:24:40.000Z",
+        "dailyFeesToken0Decimal": "2224010914319303122.85117470",
+        "dailyFeesToken1Decimal": "4580402850.08493330",
+        "dailyFeesCombinedInToken1Decimal": "8847471319.13046677",
+        "warnings": []
+      },
+      {
+        "feeTier": 500,
+        "poolAddress": "0x69BfaF19C9f377BB306a89aEd9F6B07e2c1a8d9a",
+        "pair": "WETH/USDG",
+        "referenceLiquidity": "1000000000000000000",
+        "currentTick": -200725,
+        "currentActiveLiquidity": "817898007399858913",
+        "occupancy": {
+          "currentTick": -200725,
+          "sampleCount": 3,
+          "bands": [
+            {
+              "label": "±1%",
+              "percent": 0.01,
+              "halfWidthTicks": 100,
+              "lowerTick": -200825,
+              "upperTick": -200625,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±2%",
+              "percent": 0.02,
+              "halfWidthTicks": 198,
+              "lowerTick": -200923,
+              "upperTick": -200527,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±5%",
+              "percent": 0.05,
+              "halfWidthTicks": 488,
+              "lowerTick": -201213,
+              "upperTick": -200237,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±10%",
+              "percent": 0.1,
+              "halfWidthTicks": 953,
+              "lowerTick": -201678,
+              "upperTick": -199772,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            }
+          ]
+        },
+        "status": "complete",
+        "windowSeconds": 2332,
+        "sampleCount": 2,
+        "earlierObservedAt": "2026-07-23T07:45:48.000Z",
+        "laterObservedAt": "2026-07-23T08:24:40.000Z",
+        "dailyFeesToken0Decimal": "1183565090667730346.17490436",
+        "dailyFeesToken1Decimal": "3779932884.51666460",
+        "dailyFeesCombinedInToken1Decimal": "6051240644.50262829",
+        "warnings": []
+      },
+      {
+        "feeTier": 3000,
+        "poolAddress": "0xa9188730Fe85Be88ad499D7d52B099e800fB0334",
+        "pair": "WETH/USDG",
+        "referenceLiquidity": "1000000000000000000",
+        "currentTick": -200746,
+        "currentActiveLiquidity": "38766294398239189",
+        "occupancy": {
+          "currentTick": -200746,
+          "sampleCount": 3,
+          "bands": [
+            {
+              "label": "±1%",
+              "percent": 0.01,
+              "halfWidthTicks": 100,
+              "lowerTick": -200846,
+              "upperTick": -200646,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±2%",
+              "percent": 0.02,
+              "halfWidthTicks": 198,
+              "lowerTick": -200944,
+              "upperTick": -200548,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±5%",
+              "percent": 0.05,
+              "halfWidthTicks": 488,
+              "lowerTick": -201234,
+              "upperTick": -200258,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±10%",
+              "percent": 0.1,
+              "halfWidthTicks": 953,
+              "lowerTick": -201699,
+              "upperTick": -199793,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            }
+          ]
+        },
+        "status": "complete",
+        "windowSeconds": 2332,
+        "sampleCount": 2,
+        "earlierObservedAt": "2026-07-23T07:45:48.000Z",
+        "laterObservedAt": "2026-07-23T08:24:40.000Z",
+        "dailyFeesToken0Decimal": "1394350170746194667.27023154",
+        "dailyFeesToken1Decimal": "2814889380.66794743",
+        "dailyFeesCombinedInToken1Decimal": "5485133709.11032135",
+        "warnings": []
+      },
+      {
+        "feeTier": 10000,
+        "poolAddress": "0x5f009E071F07e92B6C624e83F52F17bBDa34680D",
+        "pair": "WETH/USDG",
+        "referenceLiquidity": "1000000000000000000",
+        "currentTick": -201397,
+        "currentActiveLiquidity": "0",
+        "occupancy": {
+          "currentTick": -201397,
+          "sampleCount": 3,
+          "bands": [
+            {
+              "label": "±1%",
+              "percent": 0.01,
+              "halfWidthTicks": 100,
+              "lowerTick": -201497,
+              "upperTick": -201297,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±2%",
+              "percent": 0.02,
+              "halfWidthTicks": 198,
+              "lowerTick": -201595,
+              "upperTick": -201199,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±5%",
+              "percent": 0.05,
+              "halfWidthTicks": 488,
+              "lowerTick": -201885,
+              "upperTick": -200909,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            },
+            {
+              "label": "±10%",
+              "percent": 0.1,
+              "halfWidthTicks": 953,
+              "lowerTick": -202350,
+              "upperTick": -200444,
+              "observationsInRange": 3,
+              "occupancyDecimal": "1.000000"
+            }
+          ]
+        },
+        "status": "partial",
+        "windowSeconds": 2332,
+        "sampleCount": 2,
+        "earlierObservedAt": "2026-07-23T07:45:48.000Z",
+        "laterObservedAt": "2026-07-23T08:24:40.000Z",
+        "dailyFeesToken0Decimal": "0.00000000",
+        "dailyFeesToken1Decimal": "0.00000000",
+        "dailyFeesCombinedInToken1Decimal": "0.00000000",
+        "warnings": [
+          "Latest observation reports zero active liquidity; realized fees for a new position would be zero."
+        ]
+      }
+    ],
+    "disclaimer": "Daily fees are a per-liquidity estimate from past fee-growth deltas, realized only while a position stays in range. They are not a guaranteed APR or a recommendation to deploy capital."
+  }
+}

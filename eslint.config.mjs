@@ -12,6 +12,9 @@ export default tseslint.config(
       'skills/**',
       'ponytail/**',
       'i-have-adhd/**',
+      'ui-skills/**',
+      // standalone Astro site with its own toolchain
+      'web/**',
     ],
   },
   js.configs.recommended,

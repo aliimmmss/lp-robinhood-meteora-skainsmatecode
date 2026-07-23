@@ -1,0 +1,57 @@
+name: Deploy monitoring site
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every 6 hours, offset from the hourly monitor's :17 run so the cache is fresh.
+    - cron: '30 */6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-monitoring-site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LP_MINE_DATABASE_PATH: ./data/robinhood-univ3.sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: mkdir -p data
+      # Read-only consumer of the hourly monitor's accumulated database.
+      # Restores the latest monitor cache but never saves it, so it cannot
+      # conflict with the workflow that owns that cache.
+      - name: Restore monitoring state (read-only)
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/robinhood-univ3.sqlite
+            data/robinhood-univ3.sqlite-wal
+            data/robinhood-univ3.sqlite-shm
+          key: deploy-site-never-writes
+          restore-keys: |
+            monitor-db-${{ runner.os }}-
+      - run: npm run build
+      # site:data reads only the SQLite store (no live RPC needed).
+      - name: Generate site data
+        run: npm run --silent --workspace @lp-mine/worker site:data > web/src/data.json
+      - name: Install and build site
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web/dist --project-name=lp-mine-monitor --branch=main

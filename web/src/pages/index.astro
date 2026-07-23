@@ -1,0 +1,235 @@
+---
+import '../styles/global.css'
+import data from '../data.json'
+
+type FeePool = {
+  feeTier: number
+  poolAddress: string
+  pair: string | null
+  status: 'complete' | 'partial' | 'insufficient'
+  windowSeconds: number | null
+  sampleCount: number
+  currentTick: number | null
+  dailyFeesCombinedInToken1Decimal: string | null
+  occupancy: { bands: { label: string; occupancyDecimal: string }[] } | null
+}
+
+type HealthPool = {
+  feeTier: number
+  status: 'healthy' | 'degraded' | 'critical'
+  lastObservedAt: string | null
+  ageSeconds: number | null
+  observationCount: number
+  coveragePercent: string | null
+  riskFlags: string[]
+}
+
+type Alert = { severity: 'warning' | 'critical'; code: string; feeTier: number; message: string }
+
+const generatedAt = data.generatedAt
+const health = data.health as {
+  status: 'healthy' | 'degraded' | 'critical'
+  summary: { poolCounts: { total: number; healthy: number; degraded: number; critical: number } }
+  pools: HealthPool[]
+  alerts: Alert[]
+}
+const fees = data.fees as { configuredWindowSeconds: number; referenceLiquidity: string; pools: FeePool[] }
+
+const feePercent = (tier: number) => `${tier / 10_000}%`
+const hasFeeData = fees.pools.some((pool) => pool.status !== 'insufficient')
+
+function formatUsdgPerDay(decimal: string | null): string {
+  if (decimal === null) return '—'
+  const usdg = Number(decimal) / 1_000_000 // USDG has 6 decimals
+  if (!Number.isFinite(usdg)) return '—'
+  return usdg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatOccupancy(pool: FeePool): string {
+  const band = pool.occupancy?.bands.find((entry) => entry.label === '±1%')
+  if (!band) return '—'
+  return `${(Number(band.occupancyDecimal) * 100).toFixed(0)}%`
+}
+
+function formatAge(seconds: number | null): string {
+  if (seconds === null) return '—'
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ${minutes % 60}m`
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`
+}
+
+function formatTimestamp(iso: string): string {
+  return new Date(iso).toISOString().replace('T', ' ').replace('.000Z', ' UTC')
+}
+
+const statusText = {
+  healthy: 'text-emerald-400',
+  degraded: 'text-amber-400',
+  critical: 'text-red-400',
+} as const
+const statusDot = {
+  healthy: 'bg-emerald-500',
+  degraded: 'bg-amber-500',
+  critical: 'bg-red-500',
+} as const
+
+const favicon =
+  'data:image/svg+xml,' +
+  encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23000"/><rect x="3" y="3" width="10" height="10" fill="none" stroke="%23d4d4d4"/></svg>')
+---
+
+<!doctype html>
+<html lang="en" class="bg-black">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LP Mine — WETH/USDG monitoring</title>
+    <meta
+      name="description"
+      content="Read-only monitoring for WETH/USDG Uniswap v3 liquidity pools on Robinhood Chain: pool health, coverage, and fee yield by tier."
+    />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href={favicon} />
+  </head>
+  <body class="min-h-dvh bg-black text-neutral-300 antialiased">
+    <main class="mx-auto max-w-3xl px-5 py-12">
+      <header class="mb-10">
+        <h1 class="text-balance text-xl font-semibold text-neutral-100">LP Mine</h1>
+        <p class="text-pretty text-sm text-neutral-500">
+          WETH/USDG liquidity monitoring — Robinhood Chain
+        </p>
+        <p class="mt-3 font-mono text-xs tabular-nums text-neutral-600">
+          Snapshot {formatTimestamp(generatedAt)}
+        </p>
+      </header>
+
+      <section class="mb-10 flex items-center gap-2.5" aria-label="Overall health">
+        <span class={`inline-block size-2 rounded-full ${statusDot[health.status]}`}></span>
+        <span class={`text-sm font-medium ${statusText[health.status]}`}>
+          {health.status.toUpperCase()}
+        </span>
+        <span class="text-sm text-neutral-500">
+          · {health.summary.poolCounts.healthy}/{health.summary.poolCounts.total} pools healthy
+        </span>
+      </section>
+
+      <section class="mb-10">
+        <h2 class="mb-1 text-sm font-medium text-neutral-100">Fee yield by tier</h2>
+        <p class="mb-4 text-pretty text-xs text-neutral-500">
+          Combined daily fees per {fees.referenceLiquidity} liquidity units, in USDG, ranked highest
+          first. Estimated from past fee-growth over ~{Math.round(fees.configuredWindowSeconds / 3600)}h;
+          realized only while a position stays in range.
+        </p>
+
+        {
+          hasFeeData ? (
+            <div class="overflow-x-auto rounded-lg border border-neutral-800">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <th class="px-3 py-2 font-medium">Tier</th>
+                    <th class="px-3 py-2 text-right font-medium">USDG / day</th>
+                    <th class="px-3 py-2 text-right font-medium">±1% in-range</th>
+                    <th class="px-3 py-2 text-right font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fees.pools.map((pool) => (
+                    <tr class="border-t border-neutral-900">
+                      <td class="px-3 py-2 tabular-nums text-neutral-200">{feePercent(pool.feeTier)}</td>
+                      <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-100">
+                        {formatUsdgPerDay(pool.dailyFeesCombinedInToken1Decimal)}
+                      </td>
+                      <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                        {formatOccupancy(pool)}
+                      </td>
+                      <td class="px-3 py-2 text-right text-xs text-neutral-500">{pool.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="rounded-lg border border-neutral-800 p-6">
+              <p class="text-pretty text-sm text-neutral-400">
+                Not enough data yet. The hourly monitor is still collecting observations.
+              </p>
+              <p class="mt-1 text-pretty text-xs text-neutral-500">
+                Fee yield needs at least two fee-growth samples per pool. Check back after the monitor
+                has run for a day.
+              </p>
+            </div>
+          )
+        }
+      </section>
+
+      <section class="mb-10">
+        <h2 class="mb-4 text-sm font-medium text-neutral-100">Pool health</h2>
+        <div class="overflow-x-auto rounded-lg border border-neutral-800">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-neutral-500">
+                <th class="px-3 py-2 font-medium">Tier</th>
+                <th class="px-3 py-2 text-right font-medium">Last obs</th>
+                <th class="px-3 py-2 text-right font-medium">Coverage</th>
+                <th class="px-3 py-2 text-right font-medium">Obs</th>
+                <th class="px-3 py-2 text-right font-medium">Flags</th>
+              </tr>
+            </thead>
+            <tbody>
+              {health.pools.map((pool) => (
+                <tr class="border-t border-neutral-900">
+                  <td class="px-3 py-2 tabular-nums text-neutral-200">{feePercent(pool.feeTier)}</td>
+                  <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                    {formatAge(pool.ageSeconds)}
+                  </td>
+                  <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                    {pool.coveragePercent ?? '—'}
+                  </td>
+                  <td class="px-3 py-2 text-right font-mono tabular-nums text-neutral-400">
+                    {pool.observationCount}
+                  </td>
+                  <td class="px-3 py-2 text-right text-xs text-neutral-500">
+                    {pool.riskFlags.length > 0 ? pool.riskFlags.join(', ') : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2 class="mb-4 text-sm font-medium text-neutral-100">Active alerts</h2>
+        {
+          health.alerts.length > 0 ? (
+            <ul class="space-y-2">
+              {health.alerts.map((alert) => (
+                <li class="rounded-lg border border-neutral-800 px-3 py-2 text-sm">
+                  <span class={alert.severity === 'critical' ? statusText.critical : statusText.degraded}>
+                    {alert.severity}
+                  </span>
+                  <span class="text-neutral-500"> · {feePercent(alert.feeTier)} · {alert.code}</span>
+                  <p class="text-pretty text-neutral-400">{alert.message}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="text-sm text-neutral-500">No active alerts.</p>
+          )
+        }
+      </section>
+
+      <footer class="border-t border-neutral-900 pt-6">
+        <p class="text-pretty text-xs text-neutral-600">
+          Read-only monitoring. Figures are estimates of past fees per unit of liquidity, realized only
+          while a position stays in range — not a guaranteed APR, and not a recommendation to deploy
+          capital. No wallet is connected and nothing here can move funds.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
