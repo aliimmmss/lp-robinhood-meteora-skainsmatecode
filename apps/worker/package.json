@@ -9,6 +9,7 @@
     "pools:scan": "node --enable-source-maps dist/pools-scan.js",
     "pools:observe": "node --enable-source-maps dist/pools-observe.js",
     "pools:history": "node --enable-source-maps dist/pools-history.js",
+    "pools:fees": "node --enable-source-maps dist/pools-fees.js",
     "swaps:scan": "node --enable-source-maps dist/swaps-scan.js",
     "swaps:backfill": "node --enable-source-maps dist/swaps-backfill.js",
     "swaps:evidence": "node --enable-source-maps dist/swaps-evidence.js",

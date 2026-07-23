@@ -150,6 +150,22 @@ npm run --workspace @lp-mine/worker position:performance
 
 This combines entry and exit observations with estimated fee scenarios, inventory math, LP-versus-HODL accounting, and optional externally supplied realized fees and costs.
 
+### Fee-yield comparison across fee tiers
+
+```bash
+npm run --workspace @lp-mine/worker pools:fees
+```
+
+This compares realized fee yield across the four canonical WETH/USDG fee tiers using the change in each pool's `feeGrowthGlobal0X128`/`feeGrowthGlobal1X128` accumulators between two stored observations. The difference divided by 2^128 is the fee that one unit of in-range liquidity earned, so the reported figures are a per-liquidity daily rate that is directly comparable across tiers. Pools are ranked by combined daily fees (highest first).
+
+Requires at least two observations that include fee-growth data (captured by `pools:observe`). Optional controls:
+
+- `LP_MINE_FEE_WINDOW_SECONDS`, default `86400` — the report uses the widest observation pair whose earlier sample falls within this window of the latest sample.
+- `LP_MINE_FEE_REFERENCE_LIQUIDITY`, default `1000000000000000000` (1e18) — the amount of liquidity the daily-fee figures are expressed per. Absolute figures scale linearly with this; the cross-tier ranking does not depend on it.
+- `LP_MINE_HISTORY_LIMIT`, default `10000`.
+
+Per-pool status is `complete`, `partial` (short measured window, zero active liquidity, or a non-complete observation in the pair), or `insufficient` (fewer than two fee-growth observations in the window). Fees are realized only while a position stays in range; the numbers are an estimate of past fees per unit of liquidity, not a forward APR or a recommendation to deploy capital.
+
 ### Historical replay
 
 ```bash
