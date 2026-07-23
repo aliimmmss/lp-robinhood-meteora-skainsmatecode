@@ -70,7 +70,12 @@ function riskSeverity(flag: PoolHistoryRiskFlag): MonitorAlertSeverity {
 }
 
 function alertKey(code: MonitorAlertCode, poolAddress: `0x${string}`, feeTier: number, detail?: string): string {
-  return [code, poolAddress.toLowerCase(), feeTier.toString(), detail].filter((part) => part !== undefined).join(':')
+  // Digits are normalized out of the detail so warnings that embed changing
+  // measurements (ages, percentages) keep one stable alert identity.
+  const stableDetail = detail?.replace(/\d+(?:\.\d+)?/g, '#')
+  return [code, poolAddress.toLowerCase(), feeTier.toString(), stableDetail]
+    .filter((part) => part !== undefined)
+    .join(':')
 }
 
 function summarizeCounts(pools: readonly MonitorPoolHealth[], alerts: readonly MonitorAlert[]): MonitorHealthSummary {

@@ -105,6 +105,32 @@ describe('monitor alert state store', () => {
     }
   })
 
+  it('suppresses re-delivery of a flapping alert key within the cooldown window', () => {
+    const store = new SqliteMonitorAlertStateStore(databasePath())
+    try {
+      const active = store.reconcile([alert], firstSeenAt)[0]!
+      expect(store.recordNotificationDelivery('telegram', active, later, '101')).toBe(true)
+
+      // alert resolves, then reactivates -> new occurrence
+      store.reconcile([], resolvedAt)
+      store.reconcile([alert], reopenedAt)
+
+      // without a cooldown the reopened occurrence is pending again (legacy behavior)
+      expect(store.listPendingNotificationAlerts('telegram')).toHaveLength(1)
+
+      // within the cooldown the same alert key is suppressed
+      expect(
+        store.listPendingNotificationAlerts('telegram', { now: reopenedAt, cooldownSeconds: 86_400 }),
+      ).toHaveLength(0)
+
+      // after the cooldown elapses it is pending again
+      const nextDay = new Date(later.getTime() + 86_400_000 + 1_000)
+      expect(store.listPendingNotificationAlerts('telegram', { now: nextDay, cooldownSeconds: 86_400 })).toHaveLength(1)
+    } finally {
+      store.close()
+    }
+  })
+
   it('migrates legacy lifecycle rows to an explicit occurrence timestamp', () => {
     const path = databasePath()
     const database = new DatabaseSync(path)

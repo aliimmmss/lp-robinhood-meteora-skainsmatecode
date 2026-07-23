@@ -92,8 +92,12 @@ export async function deliverPendingTelegramAlerts(
   healthStatus: MonitorHealthStatus,
   generatedAt = new Date(),
   sender: TelegramSender = sendTelegramMessage,
+  cooldownSeconds = 0,
 ): Promise<MonitorTelegramNotificationReport> {
-  const pendingAlerts = store.listPendingNotificationAlerts(TELEGRAM_CHANNEL)
+  const pendingAlerts = store.listPendingNotificationAlerts(TELEGRAM_CHANNEL, {
+    now: generatedAt,
+    cooldownSeconds,
+  })
   const batches = buildTelegramAlertBatches(pendingAlerts, healthStatus, generatedAt)
   let deliveredAlertCount = 0
 
@@ -128,12 +132,10 @@ export async function sendTelegramMessage(
   const request: {
     chat_id: string
     text: string
-    protect_content: true
     message_thread_id?: number
   } = {
     chat_id: destination.chatId,
     text,
-    protect_content: true,
   }
   if (destination.messageThreadId !== null) {
     request.message_thread_id = destination.messageThreadId
@@ -175,11 +177,19 @@ export async function runMonitorTelegramNotifyCommand(
 ): Promise<void> {
   const healthConfig = readMonitorHealthConfig(environment)
   const destination = readMonitorTelegramDestination(environment)
+  const cooldownSeconds = readNotifyCooldownSeconds(environment)
   const health = buildMonitorHealthReport(healthConfig, now)
   const store = new SqliteMonitorAlertStateStore(healthConfig.databasePath)
   try {
     store.reconcile(health.alerts, now)
-    const result = await deliverPendingTelegramAlerts(store, destination, health.status, now)
+    const result = await deliverPendingTelegramAlerts(
+      store,
+      destination,
+      health.status,
+      now,
+      sendTelegramMessage,
+      cooldownSeconds,
+    )
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   } finally {
     store.close()
@@ -217,6 +227,13 @@ function formatTelegramAlertMessage(
 
 function formatFeePercent(feeTier: number): string {
   return `${feeTier / 10_000}%`
+}
+
+function readNotifyCooldownSeconds(environment: NodeJS.ProcessEnv): number {
+  const raw = environment.LP_MINE_NOTIFY_COOLDOWN_SECONDS?.trim()
+  if (raw === undefined || raw.length === 0) return 86_400
+  if (!/^\d+$/.test(raw)) throw new Error('LP_MINE_NOTIFY_COOLDOWN_SECONDS must be a non-negative integer')
+  return Number(raw)
 }
 
 function readRequiredValue(value: string | undefined, name: string): string {

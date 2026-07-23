@@ -175,7 +175,6 @@ describe('Telegram monitoring notifications', () => {
     expect(requestBody).toEqual({
       chat_id: destination.chatId,
       text: 'hello',
-      protect_content: true,
     })
 
     const failureFetch = vi.fn(async () => {

@@ -179,24 +179,39 @@ export class SqliteMonitorAlertStateStore {
     return rows.map(rowToState)
   }
 
-  listPendingNotificationAlerts(channel: string): readonly MonitorAlertState[] {
+  listPendingNotificationAlerts(
+    channel: string,
+    options: { now?: Date; cooldownSeconds?: number } = {},
+  ): readonly MonitorAlertState[] {
     assertNonEmpty(channel, 'channel')
+    const cooldownSeconds = options.cooldownSeconds ?? 0
+    if (!Number.isInteger(cooldownSeconds) || cooldownSeconds < 0) {
+      throw new RangeError('cooldownSeconds must be a non-negative integer')
+    }
+    const now = options.now ?? new Date()
+    assertValidDate(now, 'now')
+    const cooldownCutoff = new Date(now.getTime() - cooldownSeconds * 1_000).toISOString()
     const rows = this.#database
       .prepare(
         `
         SELECT state.*
         FROM monitor_alert_state AS state
-        LEFT JOIN monitor_alert_delivery AS delivery
-          ON delivery.channel = ?
-          AND delivery.alert_key = state.alert_key
-          AND delivery.occurrence_started_at = state.occurrence_started_at
         WHERE state.status = 'active'
           AND state.acknowledged_at IS NULL
-          AND delivery.alert_key IS NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM monitor_alert_delivery AS delivery
+            WHERE delivery.channel = ?
+              AND delivery.alert_key = state.alert_key
+              AND (
+                delivery.occurrence_started_at = state.occurrence_started_at
+                OR delivery.delivered_at > ?
+              )
+          )
         ORDER BY CASE state.severity WHEN 'critical' THEN 0 ELSE 1 END, state.fee_tier, state.alert_key
       `,
       )
-      .all(channel) as AlertRow[]
+      .all(channel, cooldownCutoff) as AlertRow[]
     return rows.map(rowToState)
   }
 
