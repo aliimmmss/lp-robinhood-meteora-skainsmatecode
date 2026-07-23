@@ -3,7 +3,10 @@ name: Telegram monitor
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 * * * *'
+    # Every 5 minutes — GitHub Actions' shortest allowed cron interval, and it
+    # matches LP_MINE_EXPECTED_INTERVAL_SECONDS=300. Actions is free/unlimited
+    # for public repos. Dedup + cooldown keep Telegram from spamming.
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: read

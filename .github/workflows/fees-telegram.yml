@@ -3,7 +3,9 @@ name: Telegram fee digest
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *'
+    # Every 6 hours. No hard API limit here — this is a Telegram push, so going
+    # shorter only adds chat noise without fresher data. 4x/day is the practical max.
+    - cron: '0 */6 * * *'
 
 permissions:
   contents: read

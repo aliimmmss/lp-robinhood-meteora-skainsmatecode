@@ -3,8 +3,9 @@ name: Deploy monitoring site
 on:
   workflow_dispatch:
   schedule:
-    # Every 6 hours, offset from the hourly monitor's :17 run so the cache is fresh.
-    - cron: '30 */6 * * *'
+    # Every 2 hours = ~360 builds/month, safely under Cloudflare Pages' free
+    # limit of 500 builds/month. (Hourly would be ~720/month and exceed it.)
+    - cron: '0 */2 * * *'
 
 permissions:
   contents: read
