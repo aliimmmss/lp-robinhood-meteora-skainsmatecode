@@ -27,6 +27,10 @@ export type Opportunity = {
   volumeTrend: VolumeTrend
   passesScreen: boolean
   screenNotes: string[]
+  baseSymbol: string
+  quoteSymbol: string
+  basePriceUsd: number | null
+  quotePriceUsd: number | null
 }
 
 type RawPool = {
@@ -38,6 +42,17 @@ type RawPool = {
   volume24hUsd: number
   volume6hUsd: number
   feeTierPercent: number
+  baseSymbol: string
+  quoteSymbol: string
+  basePriceUsd: number | null
+  quotePriceUsd: number | null
+}
+
+/** Splits a GeckoTerminal "BASE / QUOTE 1%" name into token symbols. */
+function parseSymbols(name: string): { baseSymbol: string; quoteSymbol: string } {
+  const withoutFee = name.replace(/\s*\d+(?:\.\d+)?%\s*$/, '')
+  const [base, quote] = withoutFee.split('/').map((part) => part.trim())
+  return { baseSymbol: base ?? '', quoteSymbol: quote ?? '' }
 }
 
 function toNumber(value: unknown): number | null {
@@ -65,6 +80,7 @@ function normalize(attributes: Record<string, unknown>): RawPool | null {
   const volume24hUsd = toNumber(volume?.h24)
   const volume6hUsd = toNumber(volume?.h6)
   if (reserveUsd === null || volume24hUsd === null || volume6hUsd === null) return null
+  const { baseSymbol, quoteSymbol } = parseSymbols(name)
   return {
     name,
     address,
@@ -74,6 +90,10 @@ function normalize(attributes: Record<string, unknown>): RawPool | null {
     volume24hUsd,
     volume6hUsd,
     feeTierPercent,
+    baseSymbol,
+    quoteSymbol,
+    basePriceUsd: toNumber(attributes.base_token_price_usd),
+    quotePriceUsd: toNumber(attributes.quote_token_price_usd),
   }
 }
 
@@ -104,6 +124,10 @@ function score(pool: RawPool, now: Date): Opportunity {
     volumeTrend,
     passesScreen: screenNotes.length === 0,
     screenNotes,
+    baseSymbol: pool.baseSymbol,
+    quoteSymbol: pool.quoteSymbol,
+    basePriceUsd: pool.basePriceUsd,
+    quotePriceUsd: pool.quotePriceUsd,
   }
 }
 

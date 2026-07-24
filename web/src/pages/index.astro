@@ -234,8 +234,12 @@ const favicon =
         }
       </section>
 
-      <section class="mb-10">
-        <h2 class="mb-1 text-sm font-medium text-neutral-100">Deposit plan</h2>
+      <section class="mb-10" data-default-target={depositPlan?.poolAddress ?? ''}>
+        <div class="mb-1 flex items-baseline justify-between gap-2">
+          <h2 class="text-sm font-medium text-neutral-100">Deposit plan</h2>
+          <span id="deposit-plan-live" class="font-mono text-xs tabular-nums text-neutral-600" />
+        </div>
+        <div id="deposit-plan-body">
         {
           depositPlan ? (
             <div class="rounded-lg border border-neutral-800 p-4">
@@ -300,6 +304,7 @@ const favicon =
             </div>
           )
         }
+        </div>
       </section>
 
       <section id="watchlist-section" class="mb-10 hidden">
@@ -536,6 +541,77 @@ const favicon =
           : 'border-neutral-700 text-neutral-400 hover:text-neutral-100'
         return `<button type="button" data-watch="${esc(address)}" class="rounded border px-2 py-0.5 text-xs ${cls}">${label}</button>`
       }
+      function depositButton(address: string): string {
+        return `<button type="button" data-deposit="${esc(address)}" class="mr-1 rounded border border-neutral-700 px-2 py-0.5 text-xs text-neutral-400 hover:text-emerald-400">→ plan</button>`
+      }
+
+      const DEPOSIT_TARGET_KEY = 'lp-mine-deposit-target'
+      const DEPOSIT_RANGE_PERCENT = 10
+      function getDepositTarget(): string | null {
+        return localStorage.getItem(DEPOSIT_TARGET_KEY)
+      }
+      function setDepositTarget(address: string | null): void {
+        if (address) localStorage.setItem(DEPOSIT_TARGET_KEY, address)
+        else localStorage.removeItem(DEPOSIT_TARGET_KEY)
+      }
+      function formatPrice(value: number): string {
+        if (value >= 1000) return value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+        if (value >= 1) return value.toFixed(2)
+        if (value > 0) return value.toPrecision(4)
+        return '0'
+      }
+
+      // Rebuilds the Deposit plan from live prices for the target pool (a
+      // promoted opportunity, else the build-time pinned pool). Falls back to
+      // the server-rendered plan when the pool or its live price is unavailable.
+      function renderDepositPlan(): void {
+        const body = document.getElementById('deposit-plan-body')
+        const liveEl = document.getElementById('deposit-plan-live')
+        const section = body?.closest('section')
+        if (!body || !section) return
+        const defaultTarget = section.getAttribute('data-default-target') ?? ''
+        const custom = getDepositTarget()
+        const targetAddr = custom ?? defaultTarget
+        if (!targetAddr) return
+        const pool = current.find((o) => o.address.toLowerCase() === targetAddr.toLowerCase())
+        if (!pool || !pool.basePriceUsd || !pool.quotePriceUsd || pool.basePriceUsd <= 0 || pool.quotePriceUsd <= 0) {
+          if (liveEl) liveEl.textContent = custom ? 'live price unavailable' : ''
+          return
+        }
+        const isCustom = !!custom && custom.toLowerCase() !== defaultTarget.toLowerCase()
+        // Show the more readable price direction (value >= 1).
+        const baseInQuote = pool.basePriceUsd / pool.quotePriceUsd
+        const unitToken = baseInQuote >= 1 ? pool.baseSymbol : pool.quoteSymbol
+        const priceToken = baseInQuote >= 1 ? pool.quoteSymbol : pool.baseSymbol
+        const price = baseInQuote >= 1 ? baseInQuote : pool.quotePriceUsd / pool.basePriceUsd
+        const rp = DEPOSIT_RANGE_PERCENT
+        const low = price * (1 - rp / 100)
+        const high = price * (1 + rp / 100)
+        const now = new Date()
+        const wib = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour12: false })
+        if (liveEl) liveEl.textContent = 'live · ' + now.toISOString().slice(11, 19) + ' UTC · ' + wib + ' WIB'
+        const reset = isCustom
+          ? `<button type="button" data-deposit-reset class="ml-2 underline hover:text-neutral-300">reset to pinned pool</button>`
+          : ''
+        body.innerHTML =
+          `<div class="rounded-lg border border-neutral-800 p-4">` +
+          `<p class="mb-3 text-pretty text-xs text-neutral-500">${isCustom ? 'Promoted opportunity' : 'Top-ranked pinned pool'} at ±${rp}% around the live price. Third-party price (GeckoTerminal) — confirm on Uniswap and verify the pool address. Prepares numbers only; you review and sign in your own wallet.${reset}</p>` +
+          `<dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">` +
+          `<div><dt class="text-xs text-neutral-500">Pool · tier</dt><dd class="text-neutral-200">${esc(pool.name)}</dd></div>` +
+          `<div><dt class="text-xs text-neutral-500">Live price</dt><dd class="font-mono tabular-nums text-neutral-100">1 ${esc(unitToken)} = ${formatPrice(price)} ${esc(priceToken)}</dd></div>` +
+          `<div><dt class="text-xs text-neutral-500">Range (±${rp}%)</dt><dd class="font-mono tabular-nums text-neutral-100">${formatPrice(low)} – ${formatPrice(high)} ${esc(priceToken)}</dd></div>` +
+          `<div class="col-span-2 sm:col-span-3"><dt class="text-xs text-neutral-500">Pool address (verify)</dt><dd class="break-all font-mono text-xs text-neutral-400">${esc(pool.address)}</dd></div>` +
+          `</dl>` +
+          `<ol class="mt-4 list-decimal space-y-1 pl-5 text-xs text-neutral-400">` +
+          `<li>Open the Uniswap create page on Robinhood Chain (chain 4663).</li>` +
+          `<li>Select ${esc(pool.name)} — verify the pool address above.</li>` +
+          `<li>Set the range to ±${rp}% around the price Uniswap shows (≈ ${formatPrice(low)}–${formatPrice(high)} ${esc(priceToken)}).</li>` +
+          `<li>Enter your deposit amount — start tiny.</li>` +
+          `<li>Review the approval and mint, then sign in your wallet.</li>` +
+          `</ol>` +
+          `<a href="https://app.uniswap.org/positions/create" target="_blank" rel="noopener noreferrer" class="mt-4 inline-block rounded border border-neutral-700 px-3 py-1 text-xs text-neutral-200 hover:border-neutral-500">Open Uniswap create page</a>` +
+          `</div>`
+      }
 
       let current: Opportunity[] = []
 
@@ -550,7 +626,8 @@ const favicon =
               const screen = o.passesScreen
                 ? '<span class="text-emerald-400">pass</span>'
                 : '<span class="text-neutral-500">review</span>'
-              return `<tr class="border-t border-neutral-900">${cells(o)}<td class="px-3 py-2 text-right text-xs">${screen}</td><td class="px-3 py-2 text-right">${watchButton(o.address, on, on ? 'watching' : 'watch')}</td></tr>`
+              const plan = o.passesScreen ? depositButton(o.address) : ''
+              return `<tr class="border-t border-neutral-900">${cells(o)}<td class="px-3 py-2 text-right text-xs">${screen}</td><td class="whitespace-nowrap px-3 py-2 text-right">${plan}${watchButton(o.address, on, on ? 'watching' : 'watch')}</td></tr>`
             })
             .join('')
         }
@@ -573,20 +650,35 @@ const favicon =
             section.classList.add('hidden')
           }
         }
+        renderDepositPlan()
       }
 
       document.addEventListener('click', (event) => {
         const el = event.target
         if (!(el instanceof HTMLElement)) return
-        const target = el.closest('[data-watch]')
-        const address = target?.getAttribute('data-watch')
-        if (!address) return
-        const list = getWatchlist()
-        const index = list.indexOf(address)
-        if (index >= 0) list.splice(index, 1)
-        else list.push(address)
-        setWatchlist(list)
-        render()
+        const watchEl = el.closest('[data-watch]')
+        if (watchEl) {
+          const address = watchEl.getAttribute('data-watch')
+          if (!address) return
+          const list = getWatchlist()
+          const index = list.indexOf(address)
+          if (index >= 0) list.splice(index, 1)
+          else list.push(address)
+          setWatchlist(list)
+          render()
+          return
+        }
+        const depositEl = el.closest('[data-deposit]')
+        if (depositEl) {
+          const address = depositEl.getAttribute('data-deposit')
+          if (address) setDepositTarget(address)
+          renderDepositPlan()
+          return
+        }
+        if (el.closest('[data-deposit-reset]')) {
+          setDepositTarget(null)
+          renderDepositPlan()
+        }
       })
 
       // Auto-refresh cadence. GeckoTerminal's free API allows ~30 calls/min and
